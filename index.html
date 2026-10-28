@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LogiFlow - Viagens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#" aria-label="LogiFlow início">
+      <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></span>
+      <span>LogiFlow</span>
+    </a>
+
+    <nav class="nav" aria-label="Navegação principal">
+      <button class="nav-item" data-view="dashboard" type="button"><svg viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></svg><span>Dashboard</span></button>
+      <button class="nav-item active" data-view="trips" type="button"><svg viewBox="0 0 24 24"><path d="M7 2v2H5a2 2 0 0 0-2 2v14h18V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7Zm12 8H5v8h14v-8Z"/></svg><span>Viagens</span></button>
+      <button class="nav-item" data-view="km" type="button"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0Zm6 0h6M12 9v6"/></svg><span>Registro de KM</span></button>
+      <button class="nav-item" data-view="text" type="button"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg><span>Texto Automático</span></button>
+      <button class="nav-item" type="button"><svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Zm0-13 2 2 3-.5.5 3 2 2-1 3 1 3-2 2-.5 3-3-.5-2 2-2-2-3 .5-.5-3-2-2 1-3-1-3 2-2 .5-3 3 .5 2-2Z"/></svg><span>Configurações</span></button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="avatar">CE</div>
+      <div><strong>Carlos Eduardo</strong><span>Administrador</span></div>
+    </div>
+  </aside>
+
+  <main class="main screen" id="tripsScreen">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">OPERACIONAL</p>
+        <h1>Viagens da semana</h1>
+      </div>
+      <button class="icon-button" id="copySummaryButton" type="button" title="Copiar resumo da semana" aria-label="Copiar resumo da semana"><svg viewBox="0 0 24 24"><path d="M8 7V3h13v13h-4M3 8h13v13H3z"/></svg></button>
+    </header>
+
+    <section class="week-header" aria-label="Navegação por semanas">
+      <button class="week-arrow" id="previousWeek" type="button" aria-label="Semana anterior"><svg viewBox="0 0 24 24"><path d="M15 18 9 12l6-6" /></svg></button>
+      <strong id="monthName">Outubro</strong>
+      <button class="week-arrow" id="nextWeek" type="button" aria-label="Próxima semana"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></button>
+    </section>
+
+    <section class="week-toolbar" aria-label="Seleção de dia">
+      <button class="day-tab active" data-day="segunda"><span>SEG</span><strong>Segunda</strong><em class="day-number" id="date-segunda">-</em><b id="count-segunda">0</b></button>
+      <button class="day-tab" data-day="terca"><span>TER</span><strong>Terça</strong><em class="day-number" id="date-terca">-</em><b id="count-terca">0</b></button>
+      <button class="day-tab" data-day="quarta"><span>QUA</span><strong>Quarta</strong><em class="day-number" id="date-quarta">-</em><b id="count-quarta">0</b></button>
+      <button class="day-tab" data-day="quinta"><span>QUI</span><strong>Quinta</strong><em class="day-number" id="date-quinta">-</em><b id="count-quinta">0</b></button>
+      <button class="day-tab" data-day="sexta"><span>SEX</span><strong>Sexta</strong><em class="day-number" id="date-sexta">-</em><b id="count-sexta">0</b></button>
+    </section>
+
+    <section class="content-head">
+      <div>
+        <p class="section-kicker">PERÍODO SEMANAL</p>
+        <h2 id="selectedDayTitle">Segunda-feira</h2>
+      </div>
+      <button class="primary-button" id="addTripButton" type="button"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Adicionar viagem</button>
+    </section>
+
+    <section class="summary-strip">
+      <div><span>Viagens</span><strong id="tripTotal">0</strong></div>
+      <div><span>Colaboradores</span><strong id="peopleTotal">0</strong></div>
+      <div><span>Custo total</span><strong id="costTotal">R$ 0,00</strong></div>
+      <button id="generateButton" class="outline-button" type="button"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg>Gerar texto automático</button>
+    </section>
+
+    <section class="trip-list" id="tripList" aria-live="polite"></section>
+  </main>
+
+  <main class="main screen" id="kmScreen" hidden>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">CONTROLE OPERACIONAL</p>
+        <h1>Registro de KM</h1>
+      </div>
+    </header>
+    <section class="km-content">
+      <div class="content-head km-head">
+        <div><p class="section-kicker">TODAS AS VIAGENS</p><h2>Quilometragem semanal</h2></div>
+      </div>
+      <div class="km-table-wrap"><table class="km-table">
+        <thead><tr><th>Dia</th><th>Município / Veículo</th><th>Solicitante</th><th>KM inicial</th><th>KM final</th><th>Distância</th></tr></thead>
+        <tbody id="kmTableBody"></tbody>
+      </table></div>
+    </section>
+  </main>
+
+  <main class="main screen" id="dashboardScreen" hidden>
+    <header class="topbar">
+      <div><p class="eyebrow">RESUMO OPERACIONAL</p><h1>Dashboard</h1></div>
+    </header>
+    <section class="dashboard-content">
+      <div class="dashboard-range">
+        <label>Dia inicial<input id="dashboardStartDate" type="date" /></label>
+        <label>Dia final<input id="dashboardEndDate" type="date" /></label>
+      </div>
+      <div class="dashboard-cards">
+        <article class="metric-card"><span>Viagens</span><strong id="dashboardTrips">0</strong><small>na semana</small></article>
+        <article class="metric-card"><span>Colaboradores</span><strong id="dashboardPeople">0</strong><small>participações</small></article>
+        <article class="metric-card"><span>Custo total</span><strong id="dashboardCost">R$ 0,00</strong><small>gasolina + ajuda</small></article>
+        <article class="metric-card"><span>KM total</span><strong id="dashboardKm">0 km</strong><small>semana selecionada</small></article>
+      </div>
+
+      <div class="dashboard-grid">
+        <section class="dashboard-panel">
+          <div class="panel-head"><div><p class="section-kicker">SEMANA</p><h2>Viagens por dia</h2></div></div>
+          <div class="day-bars" id="dashboardDayBars"></div>
+        </section>
+        <section class="dashboard-panel">
+          <div class="panel-head"><div><p class="section-kicker">RESUMO</p><h2>Custos da semana</h2></div></div>
+          <div class="cost-summary"><div><span>Gasolina</span><strong id="dashboardFuel">R$ 0,00</strong></div><div><span>Ajuda de custo</span><strong id="dashboardHelp">R$ 0,00</strong></div><div><span>Municípios</span><strong id="dashboardMunicipalities">0</strong></div></div>
+        </section>
+      </div>
+
+      <section class="dashboard-panel vehicle-chart-panel">
+        <div class="vehicle-chart-head"><span class="vehicle-chart-icon"><svg viewBox="0 0 24 24"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm11 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></span><h2>KM por Veículo</h2></div>
+        <div class="vehicle-chart" id="vehicleKmChart"></div>
+        <div class="vehicle-date-details" id="dashboardVehicleRows"></div>
+      </section>
+    </section>
+  </main>
+
+  <main class="main screen" id="textScreen" hidden>
+    <header class="topbar">
+      <div><p class="eyebrow">COMUNICAÇÃO</p><h1>Texto Automático</h1></div>
+    </header>
+    <section class="auto-text-content">
+      <div class="auto-text-day-filter">
+        <label>Data das viagens<select id="autoTextDay"><option value="all">Todas as datas</option></select></label>
+      </div>
+      <div class="auto-text-options">
+        <button class="auto-text-button active" data-text-type="fuel" type="button"><svg viewBox="0 0 24 24"><path d="M5 3h10v18H5zM8 7h4M17 6l3 3v8a2 2 0 0 0 4 0v-5l-3-3"/></svg><span>Combustível</span></button>
+        <button class="auto-text-button" data-text-type="people" type="button"><svg viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 21v-3a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v3M14 14h1a5 5 0 0 1 5 5v2"/></svg><span>Colaboradores</span></button>
+        <button class="auto-text-button" data-text-type="complete" type="button"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg><span>Resumo completo</span></button>
+      </div>
+      <div class="auto-text-panel">
+        <div class="panel-head"><div><p class="section-kicker">TEXTO GERADO</p><h2 id="autoTextTitle">Relatório de combustível</h2></div><button class="icon-button small" id="copyAutoTextButton" type="button" title="Copiar texto"><svg viewBox="0 0 24 24"><path d="M8 7V3h13v13h-4M3 8h13v13H3z"/></svg></button></div>
+        <textarea id="autoTextArea" readonly></textarea>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <div><p class="section-kicker">NOVA VIAGEM</p><h2 id="modalTitle">Segunda-feira</h2></div>
+        <button class="icon-button small" id="closeModalButton" type="button" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+      </div>
+      <form id="tripForm">
+        <label>Quem solicitou a viagem<input name="requester" required placeholder="Nome do solicitante" /></label>
+        <label>Município<input name="municipality" required placeholder="Cidade ou município de destino" /></label>
+        <label>Custeio<select name="funding" required><option value="">Selecione o custeio</option><option>IGEP SAÚDE</option><option>CEPHRECE</option><option>PLURALMED GESTÃO</option><option>PLURALMED EDUCAÇÃO</option><option>PLURALMED TECNOLOGIAS</option><option>PRIMETECH</option></select></label>
+        <label>Motorista<select name="driver" required><option value="">Selecione o motorista</option><option>Francisco Isac Sousa de Jesus</option><option>José Leonel da Silva</option><option>Jemios Alves Pereira</option><option>Jamiro Lopes de Sousa</option><option>Fernando Antonio Alves Maia</option><option>Carlos Fernandes Pereira</option></select></label>
+        <label>Veículo (placa)<input name="vehicle" required placeholder="Ex: ABC1D23" /></label>
+        <div class="form-grid">
+          <label>Horário de ida<input name="departureTime" required type="time" /></label>
+          <label>Horário de volta<input name="returnTime" required type="time" /></label>
+        </div>
+        <div class="collaborator-section">
+          <span class="field-title">Colaboradores</span>
+          <div id="collaboratorRows"></div>
+          <button class="add-collaborator-button" id="addCollaboratorButton" type="button"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Adicionar Colaborador</button>
+        </div>
+        <label>Custo da gasolina<div class="money-input"><span>R$</span><input name="fuelCost" required type="number" min="0" step="0.01" placeholder="0,00" /></div></label>
+        <div class="form-actions"><button class="ghost-button" id="cancelModalButton" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar viagem</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="summaryBackdrop" hidden>
+    <div class="modal summary-modal" role="dialog" aria-modal="true" aria-labelledby="summaryTitle">
+      <div class="modal-header">
+        <div><p class="section-kicker">RESUMO AUTOMÁTICO</p><h2 id="summaryTitle">Texto da semana</h2></div>
+        <button class="icon-button small" id="closeSummaryButton" type="button" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+      </div>
+      <textarea id="generatedText" readonly></textarea>
+      <div class="form-actions"><button class="ghost-button" id="closeSummaryTextButton" type="button">Fechar</button><button class="primary-button" id="copyGeneratedButton" type="button"><svg viewBox="0 0 24 24"><path d="M8 7V3h13v13h-4M3 8h13v13H3z"/></svg>Copiar texto</button></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status">Texto copiado</div>
+  <script src="app.js"></script>
+</body>
+</html>

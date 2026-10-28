@@ -1,0 +1,541 @@
+const DAYS = {
+  segunda: "Segunda-feira",
+  terca: "Terça-feira",
+  quarta: "Quarta-feira",
+  quinta: "Quinta-feira",
+  sexta: "Sexta-feira"
+};
+
+let selectedDay = "segunda";
+const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+let periodSettings = JSON.parse(localStorage.getItem("logiflow-period") || '{"weekStart":""}');
+let dashboardRange = JSON.parse(localStorage.getItem("logiflow-dashboard-range") || '{"start":"","end":""}');
+if (!periodSettings.weekStart) {
+  const today = new Date();
+  const dayOffset = (today.getDay() + 6) % 7;
+  today.setDate(today.getDate() - dayOffset);
+  periodSettings.weekStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
+if (!dashboardRange.start || !dashboardRange.end) {
+  dashboardRange.start = periodSettings.weekStart;
+  const rangeEnd = new Date(`${periodSettings.weekStart}T12:00:00`);
+  rangeEnd.setDate(rangeEnd.getDate() + 4);
+  dashboardRange.end = `${rangeEnd.getFullYear()}-${String(rangeEnd.getMonth() + 1).padStart(2, "0")}-${String(rangeEnd.getDate()).padStart(2, "0")}`;
+}
+let trips = JSON.parse(localStorage.getItem("logiflow-trips") || "{}");
+Object.keys(DAYS).forEach((day) => {
+  if (!Array.isArray(trips[day])) trips[day] = [];
+  trips[day].forEach((trip) => {
+    if (!trip.weekStart) trip.weekStart = periodSettings.weekStart;
+    if (Array.isArray(trip.collaborators)) {
+      trip.collaborators = trip.collaborators.map((item) => typeof item === "string" ? { name: item, cost: Number(trip.personCost || 0) } : { name: item.name || "", cost: Number(item.cost || 0) });
+    } else {
+      trip.collaborators = [];
+    }
+  });
+});
+
+const tripList = document.querySelector("#tripList");
+const modalBackdrop = document.querySelector("#modalBackdrop");
+const summaryBackdrop = document.querySelector("#summaryBackdrop");
+const tripForm = document.querySelector("#tripForm");
+
+function money(value) {
+  return Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function save() {
+  localStorage.setItem("logiflow-trips", JSON.stringify(trips));
+}
+
+function escapeHtml(value) {
+  const span = document.createElement("span");
+  span.textContent = value;
+  return span.innerHTML;
+}
+
+function getWeekDates() {
+  const start = new Date(`${periodSettings.weekStart}T12:00:00`);
+  return [0, 1, 2, 3, 4].map((offset) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + offset);
+    return date;
+  });
+}
+
+function formatPeriodDay(dayIndex) {
+  const date = getWeekDates()[dayIndex];
+  return date ? `${date.getDate()} de ${monthNames[date.getMonth()]} de ${date.getFullYear()}` : "Não informado";
+}
+
+function savePeriod() {
+  localStorage.setItem("logiflow-period", JSON.stringify(periodSettings));
+}
+
+function formatShortDate(dayIndex) {
+  const date = getWeekDates()[dayIndex];
+  if (!date) return "";
+  return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
+}
+
+function formatTextMoney(value) {
+  return `R$ ${Number(value || 0).toFixed(2).replace(".", ",")}`;
+}
+
+let autoTextDay = "all";
+
+function getCurrentWeekTripsForText() {
+  return Object.entries(DAYS).flatMap(([day, dayName], dayIndex) => {
+    if (autoTextDay !== "all" && day !== autoTextDay) return [];
+    return trips[day].filter((trip) => trip.weekStart === periodSettings.weekStart).map((trip) => ({ ...trip, day, dayName, dayIndex }));
+  });
+}
+
+function generateFuelText() {
+  const weekTrips = getCurrentWeekTripsForText();
+  const headerDayIndex = autoTextDay === "all" ? (weekTrips.length ? weekTrips[0].dayIndex : 0) : Object.keys(DAYS).indexOf(autoTextDay);
+  const headerDate = formatShortDate(headerDayIndex);
+  const lines = [`🚗 RELATÓRIO DE VIAGENS - ${headerDate}`, ""];
+  weekTrips.forEach((trip, index) => {
+    lines.push(`🛣️ Viagem ${index + 1}`, "");
+    lines.push(`🌍 Destino: ${(trip.municipality || "NÃO INFORMADO").toUpperCase()}`);
+    lines.push(`📅 Data: ${formatShortDate(trip.dayIndex)}`);
+    lines.push(`👨‍✈️ Motorista: ${trip.driver || "Não informado"}`);
+    lines.push(`🚘 Veículo: ${trip.vehicle || "Não informado"}`);
+    lines.push(`👥 Total de Pessoas: ${trip.collaborators.length}`);
+    lines.push(`⛽ Valor Combustível: ${formatTextMoney(trip.fuelCost)}`);
+    lines.push(`🏣 Custeio: ${trip.funding || "Não informado"}`);
+    lines.push("──────────────────────────────────────────────────", "");
+  });
+  if (!weekTrips.length) lines.push(autoTextDay === "all" ? "Nenhuma viagem cadastrada nesta semana." : "Nenhuma viagem cadastrada neste dia.");
+  return lines.join("\n").trim();
+}
+
+function generatePeopleText() {
+  const weekTrips = getCurrentWeekTripsForText();
+  const headerDayIndex = autoTextDay === "all" ? (weekTrips.length ? weekTrips[0].dayIndex : 0) : Object.keys(DAYS).indexOf(autoTextDay);
+  const headerDate = formatShortDate(headerDayIndex);
+  const lines = [`🚗 SOLICITAÇÕES DE VIAGEM CONSOLIDADA PARA O DIA ${headerDate}`, ""];
+
+  if (!weekTrips.length) {
+    lines.push(autoTextDay === "all" ? "Nenhuma viagem cadastrada nesta semana." : "Nenhuma viagem cadastrada nesta data.");
+    return lines.join("\n").trim();
+  }
+
+  weekTrips.forEach((trip, index) => {
+    const date = formatShortDate(trip.dayIndex);
+    lines.push(`🛣️ Viagem ${index + 1}`, "");
+    lines.push(`🌍 Destino: ${(trip.municipality || "NÃO INFORMADO").toUpperCase()}`);
+    lines.push("📍 Local de Saída: Pluralmed");
+    lines.push(`🕒 Data/Hora Saída: ${date} às ${trip.departureTime || "--:--"}`);
+    lines.push(`🕒 Data/Hora Retorno: ${date} às ${trip.returnTime || "--:--"}`);
+    lines.push(`👨‍✈️ Motorista: ${trip.driver || "Não informado"}`);
+    lines.push(`🚘 Veículo: ${trip.vehicle || "Não informado"}`);
+    lines.push("👥 Colaboradores:", "");
+    if (trip.collaborators.length) {
+      trip.collaborators.forEach((person) => lines.push(`- ${(person.name || "NÃO INFORMADO").toUpperCase()}`));
+    } else {
+      lines.push("- Nenhum colaborador informado");
+    }
+    if (index < weekTrips.length - 1) lines.push("", "---", "");
+  });
+  return lines.join("\n").trim();
+}
+
+function renderAutoText(type = "fuel") {
+  const select = document.querySelector("#autoTextDay");
+  const selected = select.value;
+  const currentOptions = `<option value="all">Todas as datas</option>` + Object.keys(DAYS).map((day, index) => {
+    const date = getWeekDates()[index];
+    const label = `${date.getDate()} de ${monthNames[date.getMonth()]} - ${DAYS[day].replace("-feira", "")}`;
+    return `<option value="${day}">${label}</option>`;
+  }).join("");
+  select.innerHTML = currentOptions;
+  select.value = Object.keys(DAYS).includes(selected) || selected === "all" ? selected : "all";
+  autoTextDay = select.value;
+  const titles = { fuel: "Relatório de combustível", people: "Relatório de colaboradores", complete: "Resumo completo" };
+  document.querySelector("#autoTextTitle").textContent = titles[type];
+  const text = type === "people" ? generatePeopleText() : type === "complete" ? generateSummary() : generateFuelText();
+  document.querySelector("#autoTextArea").value = text;
+}
+
+function render() {
+  const dayTrips = trips[selectedDay].filter((trip) => trip.weekStart === periodSettings.weekStart);
+  document.querySelector("#selectedDayTitle").textContent = DAYS[selectedDay];
+  document.querySelector("#modalTitle").textContent = DAYS[selectedDay];
+  renderWeekHeader();
+
+  Object.keys(DAYS).forEach((day) => {
+    const count = trips[day].filter((trip) => trip.weekStart === periodSettings.weekStart).length;
+    document.querySelector(`#count-${day}`).textContent = count;
+  });
+
+  const allTrips = Object.values(trips).flat().filter((trip) => trip.weekStart === periodSettings.weekStart);
+  const people = allTrips.reduce((total, trip) => total + trip.collaborators.length, 0);
+  const cost = allTrips.reduce((total, trip) => total + Number(trip.fuelCost) + trip.collaborators.reduce((sum, person) => sum + Number(person.cost || 0), 0), 0);
+  document.querySelector("#tripTotal").textContent = allTrips.length;
+  document.querySelector("#peopleTotal").textContent = people;
+  document.querySelector("#costTotal").textContent = money(cost);
+  if (!document.querySelector("#dashboardScreen").hidden) renderDashboard();
+
+  if (!dayTrips.length) {
+    tripList.innerHTML = `<div class="empty-state"><div><svg viewBox="0 0 24 24"><path d="M7 2v2H5a2 2 0 0 0-2 2v14h18V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7Zm12 8H5v8h14v-8Z"/></svg><strong>Nenhuma viagem cadastrada</strong><span>Adicione uma viagem para ${DAYS[selectedDay].toLowerCase()}.</span></div></div>`;
+    return;
+  }
+
+  const selectedDayIndex = Object.keys(DAYS).indexOf(selectedDay);
+  const selectedDate = formatPeriodDay(selectedDayIndex);
+  tripList.innerHTML = dayTrips.map((trip, index) => {
+    const collaborators = trip.collaborators.map((person) => person.cost ? `${person.name} (${money(person.cost)})` : person.name).join("; ");
+    const total = Number(trip.fuelCost) + trip.collaborators.reduce((sum, person) => sum + Number(person.cost || 0), 0);
+    return `<article class="trip-card">
+      <div class="trip-icon"><svg viewBox="0 0 24 24"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm11 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></div>
+      <dl><dt>Data da viagem</dt><dd>${escapeHtml(selectedDate)}</dd><dd class="muted">Ida ${escapeHtml(trip.departureTime || "--:--")} · Volta ${escapeHtml(trip.returnTime || "--:--")}</dd></dl>
+      <dl><dt>Solicitante / Município</dt><dd>${escapeHtml(trip.requester)}</dd><dd class="muted">${escapeHtml(trip.municipality || "Não informado")} · ${escapeHtml(trip.vehicle)}</dd><dd class="muted">Motorista: ${escapeHtml(trip.driver || "Não informado")}</dd><dd class="muted">Custeio: ${escapeHtml(trip.funding || "Não informado")}</dd></dl>
+      <dl><dt>Colaboradores · ${trip.collaborators.length}</dt><dd class="muted">${escapeHtml(collaborators)}</dd></dl>
+      <dl class="info-cost"><dt>Custos</dt><dd>${money(total)}</dd><dd class="muted">Gasolina ${money(trip.fuelCost)} · Ajuda de custo ${money(total - Number(trip.fuelCost))}</dd></dl>
+      <button class="delete-button" type="button" data-index="${index}" title="Excluir viagem" aria-label="Excluir viagem"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V3h8v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg></button>
+    </article>`;
+  }).join("");
+}
+
+function addCollaboratorRow(name = "", cost = 0) {
+  const row = document.createElement("div");
+  row.className = "collaborator-row";
+  row.innerHTML = `<input class="name-input" required placeholder="Nome do colaborador" value="${escapeHtml(name)}" />
+    <button class="cost-toggle${cost ? " active" : ""}" type="button">Ajuda de custo</button>
+    <div class="money-input collaborator-cost${cost ? "" : " hidden"}"><span>R$</span><input class="cost-input" type="number" min="0" step="0.01" value="${cost || ""}" placeholder="0,00" /></div>
+    <button class="remove-collaborator" type="button" title="Remover colaborador" aria-label="Remover colaborador"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button>`;
+  document.querySelector("#collaboratorRows").appendChild(row);
+}
+
+function getTripDate(trip, dayIndex) {
+  const date = new Date(`${trip.weekStart}T12:00:00`);
+  date.setDate(date.getDate() + dayIndex);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function getWeekTrips() {
+  return Object.entries(DAYS).flatMap(([day, dayName], dayIndex) =>
+    trips[day].filter((trip) => trip.weekStart).map((trip) => {
+      const tripDate = getTripDate(trip, dayIndex);
+      return { ...trip, day, dayName, dayIndex, tripDate };
+    }).filter((trip) => trip.tripDate >= dashboardRange.start && trip.tripDate <= dashboardRange.end)
+  );
+}
+
+function getTripDistance(trip) {
+  const initial = Number(trip.kmInitial || 0);
+  const final = Number(trip.kmFinal || 0);
+  return final > initial ? final - initial : 0;
+}
+
+function renderDashboard() {
+  if (!dashboardRange.end || dashboardRange.end < dashboardRange.start) dashboardRange.end = dashboardRange.start;
+  const startInput = document.querySelector("#dashboardStartDate");
+  const endInput = document.querySelector("#dashboardEndDate");
+  if (startInput) startInput.value = dashboardRange.start;
+  if (endInput) endInput.value = dashboardRange.end;
+  const weekTrips = getWeekTrips();
+  const people = weekTrips.reduce((total, trip) => total + trip.collaborators.length, 0);
+  const fuel = weekTrips.reduce((total, trip) => total + Number(trip.fuelCost || 0), 0);
+  const help = weekTrips.reduce((total, trip) => total + trip.collaborators.reduce((sum, person) => sum + Number(person.cost || 0), 0), 0);
+  const km = weekTrips.reduce((total, trip) => total + getTripDistance(trip), 0);
+  const municipalities = new Set(weekTrips.map((trip) => (trip.municipality || "").trim()).filter(Boolean));
+
+  document.querySelector("#dashboardTrips").textContent = weekTrips.length;
+  document.querySelector("#dashboardPeople").textContent = people;
+  document.querySelector("#dashboardCost").textContent = money(fuel + help);
+  document.querySelector("#dashboardKm").textContent = `${km.toLocaleString("pt-BR")} km`;
+  document.querySelector("#dashboardFuel").textContent = money(fuel);
+  document.querySelector("#dashboardHelp").textContent = money(help);
+  document.querySelector("#dashboardMunicipalities").textContent = municipalities.size;
+
+  const counts = Object.keys(DAYS).map((day) => weekTrips.filter((trip) => trip.day === day).length);
+  const maxCount = Math.max(...counts, 1);
+  document.querySelector("#dashboardDayBars").innerHTML = Object.keys(DAYS).map((day, index) => {
+    const label = ["SEG", "TER", "QUA", "QUI", "SEX"][index];
+    const height = `${Math.max((counts[index] / maxCount) * 100, counts[index] ? 18 : 4)}%`;
+    return `<div class="day-bar"><div class="day-bar-track"><div class="day-bar-fill" style="height:${height}" title="${counts[index]} viagem(ns)"></div></div><span>${label} · ${counts[index]}</span></div>`;
+  }).join("");
+
+  const vehicleGroups = {};
+  weekTrips.forEach((trip) => {
+    const vehicle = trip.vehicle || "Sem placa";
+    const date = formatPeriodDay(trip.dayIndex);
+    const key = `${vehicle}|||${date}`;
+    if (!vehicleGroups[key]) vehicleGroups[key] = { vehicle, date, drivers: new Set(), municipalities: new Set(), km: 0 };
+    vehicleGroups[key].drivers.add(trip.driver || "Não informado");
+    vehicleGroups[key].municipalities.add(trip.municipality || "Não informado");
+    vehicleGroups[key].km += getTripDistance(trip);
+  });
+
+  const vehicleTotals = {};
+  const vehicleTripCounts = {};
+  Object.values(vehicleGroups).forEach((group) => {
+    vehicleTotals[group.vehicle] = (vehicleTotals[group.vehicle] || 0) + group.km;
+    vehicleTripCounts[group.vehicle] = (vehicleTripCounts[group.vehicle] || 0) + weekTrips.filter((trip) => trip.vehicle === group.vehicle && formatPeriodDay(trip.dayIndex) === group.date).length;
+  });
+  const sortedVehicles = Object.entries(vehicleTotals).sort((a, b) => b[1] - a[1]);
+  const maxVehicleKm = Math.max(...sortedVehicles.map(([, km]) => km), 1);
+  document.querySelector("#vehicleKmChart").innerHTML = sortedVehicles.length ? sortedVehicles.map(([vehicle, km], index) => {
+    const width = `${Math.max((km / maxVehicleKm) * 100, km ? 4 : 0)}%`;
+    const tripCount = vehicleTripCounts[vehicle] || 0;
+    return `<div class="vehicle-bar-row"><div class="vehicle-bar-label"><strong>${escapeHtml(vehicle)}</strong><span>${tripCount} viagem(ns)</span></div><div class="vehicle-bar-track"><div class="vehicle-bar-fill" style="width:${width}"></div></div><div class="vehicle-bar-value">${km.toLocaleString("pt-BR")} km (${tripCount})</div></div>`;
+  }).join("") : `<div class="vehicle-bar-row"><div class="vehicle-bar-label"><strong>Sem veículos</strong></div><div class="vehicle-bar-track"></div><div class="vehicle-bar-value">0 km</div></div>`;
+  document.querySelector("#dashboardVehicleRows").innerHTML = "";
+}
+
+function renderKmTable() {
+  const body = document.querySelector("#kmTableBody");
+  const rows = [];
+
+  Object.entries(DAYS).forEach(([day, dayName]) => {
+    trips[day].filter((trip) => trip.weekStart === periodSettings.weekStart).forEach((trip) => {
+      const index = trips[day].indexOf(trip);
+      const initial = Number(trip.kmInitial || 0);
+      const final = Number(trip.kmFinal || 0);
+      const distance = final > initial ? final - initial : 0;
+      const dayIndex = Object.keys(DAYS).indexOf(day);
+      rows.push(`<tr>
+        <td><strong>${dayName}</strong><span>${escapeHtml(formatPeriodDay(dayIndex))}</span></td>
+        <td><strong>${escapeHtml(trip.municipality || "Não informado")}</strong><span>${escapeHtml(trip.vehicle)} · ${escapeHtml(trip.funding || "Sem custeio")}</span></td>
+        <td>${escapeHtml(trip.requester)}</td>
+        <td><input class="km-input" data-day="${day}" data-index="${index}" data-kind="initial" type="number" min="0" step="1" value="${trip.kmInitial ?? ""}" placeholder="0" /></td>
+        <td><input class="km-input" data-day="${day}" data-index="${index}" data-kind="final" type="number" min="0" step="1" value="${trip.kmFinal ?? ""}" placeholder="0" /></td>
+        <td class="km-distance">${distance.toLocaleString("pt-BR")} km</td>
+      </tr>`);
+    });
+  });
+
+  body.innerHTML = rows.length ? rows.join("") : `<tr><td class="km-empty" colspan="6">Nenhuma viagem cadastrada para registrar quilometragem.</td></tr>`;
+}
+
+function renderWeekHeader() {
+  const dates = getWeekDates();
+  const dayKeys = ["segunda", "terca", "quarta", "quinta", "sexta"];
+  document.querySelector("#monthName").textContent = monthNames[dates[4].getMonth()].toUpperCase();
+  dayKeys.forEach((day, index) => {
+    document.querySelector(`#date-${day}`).textContent = dates[index].getDate();
+  });
+}
+
+function openModal() {
+  modalBackdrop.hidden = false;
+  tripForm.reset();
+  document.querySelector("#collaboratorRows").innerHTML = "";
+  addCollaboratorRow();
+  tripForm.elements.requester.focus();
+}
+function closeModal() { modalBackdrop.hidden = true; }
+function closeSummary() { summaryBackdrop.hidden = true; }
+
+function generateSummary() {
+  const lines = ["Resumo das viagens da semana"];
+  let hasTrips = false;
+
+  Object.entries(DAYS).forEach(([day, dayName], dayIndex) => {
+    if (autoTextDay !== "all" && day !== autoTextDay) return;
+    const weekTrips = trips[day].filter((trip) => trip.weekStart === periodSettings.weekStart);
+    if (!weekTrips.length) return;
+    hasTrips = true;
+    lines.push(`\n${dayName}:`);
+    weekTrips.forEach((trip, index) => {
+      const helpTotal = trip.collaborators.reduce((sum, person) => sum + Number(person.cost || 0), 0);
+      const total = Number(trip.fuelCost) + helpTotal;
+      lines.push(`${index + 1}. Solicitante: ${trip.requester}`);
+      const dayIndex = Object.keys(DAYS).indexOf(day);
+      const date = getWeekDates()[dayIndex];
+      lines.push(`   Dia: ${formatPeriodDay(dayIndex)}`);
+      lines.push(`   Município: ${trip.municipality || "Não informado"}`);
+      lines.push(`   Motorista: ${trip.driver || "Não informado"}`);
+      lines.push(`   Custeio: ${trip.funding || "Não informado"}`);
+      lines.push(`   Veículo: ${trip.vehicle}`);
+      lines.push(`   Horário de ida: ${trip.departureTime || "Não informado"}`);
+      lines.push(`   Horário de volta: ${trip.returnTime || "Não informado"}`);
+      lines.push(`   Colaboradores:`);
+      trip.collaborators.forEach((person) => lines.push(`   - ${person.name}: ajuda de custo ${money(person.cost || 0)}`));
+      lines.push(`   Custo de gasolina: ${money(trip.fuelCost)}`);
+      lines.push(`   Total de ajuda de custo: ${money(helpTotal)}`);
+      lines.push(`   Custo total da viagem: ${money(total)}`);
+    });
+  });
+
+  if (!hasTrips) lines.push(autoTextDay === "all" ? "\nNenhuma viagem cadastrada nesta semana." : "\nNenhuma viagem cadastrada nesta data.");
+  return lines.join("\n");
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const temporary = document.createElement("textarea");
+    temporary.value = text;
+    document.body.appendChild(temporary);
+    temporary.select();
+    document.execCommand("copy");
+    temporary.remove();
+  }
+  const toast = document.querySelector("#toast");
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 2200);
+}
+
+document.querySelector("#previousWeek").addEventListener("click", () => {
+  const start = new Date(`${periodSettings.weekStart}T12:00:00`);
+  start.setDate(start.getDate() - 7);
+  periodSettings.weekStart = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+  savePeriod();
+  render();
+});
+
+document.querySelector("#nextWeek").addEventListener("click", () => {
+  const start = new Date(`${periodSettings.weekStart}T12:00:00`);
+  start.setDate(start.getDate() + 7);
+  periodSettings.weekStart = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+  savePeriod();
+  render();
+});
+
+document.querySelectorAll(".day-tab").forEach((button) => {
+  button.addEventListener("click", () => {
+    selectedDay = button.dataset.day;
+    document.querySelectorAll(".day-tab").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    render();
+  });
+});
+
+document.querySelector("#addTripButton").addEventListener("click", openModal);
+document.querySelector("#addCollaboratorButton").addEventListener("click", () => addCollaboratorRow());
+document.querySelector("#closeModalButton").addEventListener("click", closeModal);
+document.querySelector("#cancelModalButton").addEventListener("click", closeModal);
+modalBackdrop.addEventListener("click", (event) => { if (event.target === modalBackdrop) closeModal(); });
+
+document.querySelector("#closeSummaryButton").addEventListener("click", closeSummary);
+document.querySelector("#closeSummaryTextButton").addEventListener("click", closeSummary);
+summaryBackdrop.addEventListener("click", (event) => { if (event.target === summaryBackdrop) closeSummary(); });
+
+document.querySelector("#generateButton").addEventListener("click", () => {
+  document.querySelector("#generatedText").value = generateSummary();
+  summaryBackdrop.hidden = false;
+});
+
+document.querySelector("#copySummaryButton").addEventListener("click", () => copyText(generateSummary()));
+document.querySelector("#copyGeneratedButton").addEventListener("click", () => copyText(document.querySelector("#generatedText").value));
+
+document.querySelector("#collaboratorRows").addEventListener("click", (event) => {
+  const costButton = event.target.closest(".cost-toggle");
+  if (costButton) {
+    const costInput = costButton.nextElementSibling;
+    costInput.classList.toggle("hidden");
+    costButton.classList.toggle("active", !costInput.classList.contains("hidden"));
+    if (!costInput.classList.contains("hidden")) costInput.querySelector("input").focus();
+    return;
+  }
+  const removeButton = event.target.closest(".remove-collaborator");
+  if (removeButton && document.querySelectorAll(".collaborator-row").length > 1) removeButton.closest(".collaborator-row").remove();
+});
+
+tripForm.elements.returnTime.addEventListener("input", () => tripForm.elements.returnTime.setCustomValidity(""));
+
+tripForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(tripForm);
+  const collaborators = Array.from(document.querySelectorAll(".collaborator-row")).map((row) => ({
+    name: row.querySelector(".name-input").value.trim(),
+    cost: Number(row.querySelector(".cost-input").value || 0)
+  })).filter((person) => person.name);
+  if (!collaborators.length) return;
+  const departureTime = String(data.get("departureTime")).trim();
+  const returnTime = String(data.get("returnTime")).trim();
+  if (departureTime && returnTime && returnTime < departureTime) {
+    tripForm.elements.returnTime.setCustomValidity("O horário de volta deve ser igual ou posterior ao horário de ida.");
+    tripForm.elements.returnTime.reportValidity();
+    return;
+  }
+
+  trips[selectedDay].push({
+    weekStart: periodSettings.weekStart,
+    requester: String(data.get("requester")).trim(),
+    municipality: String(data.get("municipality")).trim(),
+    funding: String(data.get("funding")).trim(),
+    driver: String(data.get("driver")).trim(),
+    vehicle: String(data.get("vehicle")).trim().toUpperCase(),
+    departureTime,
+    returnTime,
+    collaborators,
+    fuelCost: Number(data.get("fuelCost"))
+  });
+  save();
+  closeModal();
+  render();
+});
+
+document.querySelector("#dashboardStartDate").addEventListener("change", (event) => {
+  dashboardRange.start = event.target.value;
+  if (dashboardRange.end && dashboardRange.end < dashboardRange.start) dashboardRange.end = dashboardRange.start;
+  localStorage.setItem("logiflow-dashboard-range", JSON.stringify(dashboardRange));
+  renderDashboard();
+});
+
+document.querySelector("#dashboardEndDate").addEventListener("change", (event) => {
+  dashboardRange.end = event.target.value;
+  if (dashboardRange.start && dashboardRange.end < dashboardRange.start) dashboardRange.start = dashboardRange.end;
+  localStorage.setItem("logiflow-dashboard-range", JSON.stringify(dashboardRange));
+  renderDashboard();
+});
+
+document.querySelectorAll(".nav-item[data-view]").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".nav-item[data-view]").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    const view = button.dataset.view;
+    document.querySelector("#tripsScreen").hidden = view !== "trips";
+    document.querySelector("#kmScreen").hidden = view !== "km";
+    document.querySelector("#dashboardScreen").hidden = view !== "dashboard";
+    document.querySelector("#textScreen").hidden = view !== "text";
+    if (view === "km") renderKmTable();
+    if (view === "dashboard") renderDashboard();
+    if (view === "text") renderAutoText(document.querySelector(".auto-text-button.active")?.dataset.textType || "fuel");
+  });
+});
+
+document.querySelector("#autoTextDay").addEventListener("change", (event) => {
+  autoTextDay = event.target.value;
+  renderAutoText(document.querySelector(".auto-text-button.active")?.dataset.textType || "fuel");
+});
+
+document.querySelectorAll(".auto-text-button").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".auto-text-button").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    renderAutoText(button.dataset.textType);
+  });
+});
+
+document.querySelector("#copyAutoTextButton").addEventListener("click", () => copyText(document.querySelector("#autoTextArea").value));
+
+document.querySelector("#kmTableBody").addEventListener("input", (event) => {
+  const input = event.target.closest(".km-input");
+  if (!input) return;
+  const trip = trips[input.dataset.day][Number(input.dataset.index)];
+  const field = input.dataset.kind === "initial" ? "kmInitial" : "kmFinal";
+  trip[field] = input.value === "" ? null : Number(input.value);
+  save();
+  const row = input.closest("tr");
+  const initial = Number(trip.kmInitial || 0);
+  const final = Number(trip.kmFinal || 0);
+  const distance = final > initial ? final - initial : 0;
+  row.querySelector(".km-distance").textContent = `${distance.toLocaleString("pt-BR")} km`;
+  if (!document.querySelector("#dashboardScreen").hidden) renderDashboard();
+});
+
+tripList.addEventListener("click", (event) => {
+  const button = event.target.closest(".delete-button");
+  if (!button) return;
+  trips[selectedDay].splice(Number(button.dataset.index), 1);
+  save();
+  render();
+});
+
+render();
