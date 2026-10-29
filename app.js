@@ -768,7 +768,14 @@ document.querySelector("#loginForm").addEventListener("submit", async (event) =>
     applyCurrentProfile();
     saveSharedState();
   } catch (error) {
-    errorElement.textContent = error.message || "Não foi possível concluir a operação.";
+    const message = String(error?.message || "");
+    if (message.toLowerCase().includes("rate limit")) {
+      errorElement.textContent = "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.";
+    } else if (message.toLowerCase().includes("database error saving new user")) {
+      errorElement.textContent = "Não foi possível finalizar o cadastro. Tente outro código de login.";
+    } else {
+      errorElement.textContent = message || "Não foi possível concluir a operação.";
+    }
     errorElement.className = "login-error";
     errorElement.hidden = false;
   } finally {

@@ -46,9 +46,9 @@ begin
   insert into public.profiles (id, login_code, display_name, role, active)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'login_code', split_part(new.email, '@', 1)),
-    coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)),
-    coalesce(new.raw_user_meta_data->>'role', 'consulta'),
+    coalesce(nullif(trim(new.raw_user_meta_data->>'login_code'), ''), split_part(coalesce(new.email, new.id::text), '@', 1)),
+    coalesce(nullif(trim(new.raw_user_meta_data->>'display_name'), ''), 'Novo usuário'),
+    coalesce(nullif(trim(new.raw_user_meta_data->>'role'), ''), 'consulta'),
     true
   )
   on conflict (id) do update set
