@@ -135,6 +135,7 @@
       <div class="auto-text-options">
         <button class="auto-text-button active" data-text-type="fuel" type="button"><svg viewBox="0 0 24 24"><path d="M5 3h10v18H5zM8 7h4M17 6l3 3v8a2 2 0 0 0 4 0v-5l-3-3"/></svg><span>Combustível</span></button>
         <button class="auto-text-button" data-text-type="people" type="button"><svg viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 21v-3a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v3M14 14h1a5 5 0 0 1 5 5v2"/></svg><span>Colaboradores</span></button>
+        <button class="auto-text-button" data-text-type="financial" type="button"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7"/></svg><span>Financeiro</span></button>
         <button class="auto-text-button" data-text-type="complete" type="button"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg><span>Resumo completo</span></button>
       </div>
       <div class="auto-text-panel">
@@ -154,7 +155,7 @@
         <label>Quem solicitou a viagem<input name="requester" required placeholder="Nome do solicitante" /></label>
         <label>Município<input name="municipality" required placeholder="Cidade ou município de destino" /></label>
         <label>Custeio<select name="funding" required><option value="">Selecione o custeio</option><option>IGEP SAÚDE</option><option>CEPHRECE</option><option>PLURALMED GESTÃO</option><option>PLURALMED EDUCAÇÃO</option><option>PLURALMED TECNOLOGIAS</option><option>PRIMETECH</option></select></label>
-        <label>Motorista<select name="driver" required><option value="">Selecione o motorista</option><option>Francisco Isac Sousa de Jesus</option><option>José Leonel da Silva</option><option>Jemios Alves Pereira</option><option>Jamiro Lopes de Sousa</option><option>Fernando Antonio Alves Maia</option><option>Carlos Fernandes Pereira</option></select></label>
+        <label>Motorista<select name="driver" required><option value="">Selecione o motorista</option><option>Francisco Isac Sousa de Jesus</option><option>José Leonel da Silva</option><option>Jemios Alves Pereira</option><option>Jamiro Lopes de Sousa</option><option>Fernando Antonio Alves Maia</option><option>Carlos Fernandes Pereira</option><option>Júnior Javi</option><option>Colaborador Externo</option></select></label>
         <label>Veículo (placa)<input name="vehicle" required placeholder="Ex: ABC1D23" /></label>
         <div class="form-grid">
           <label>Horário de ida<input name="departureTime" required type="time" /></label>
@@ -183,6 +184,8 @@
   </div>
 
   <div class="toast" id="toast" role="status">Texto copiado</div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

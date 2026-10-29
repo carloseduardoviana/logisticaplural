@@ -28,7 +28,7 @@ Object.keys(DAYS).forEach((day) => {
   trips[day].forEach((trip) => {
     if (!trip.weekStart) trip.weekStart = periodSettings.weekStart;
     if (Array.isArray(trip.collaborators)) {
-      trip.collaborators = trip.collaborators.map((item) => typeof item === "string" ? { name: item, cost: Number(trip.personCost || 0) } : { name: item.name || "", cost: Number(item.cost || 0) });
+      trip.collaborators = trip.collaborators.map((item) => typeof item === "string" ? { name: item, cost: Number(trip.personCost || 0), helpType: "Não informado" } : { name: item.name || "", cost: Number(item.cost || 0), helpType: item.helpType || "Não informado" });
     } else {
       trip.collaborators = [];
     }
@@ -46,6 +46,7 @@ function money(value) {
 
 function save() {
   localStorage.setItem("logiflow-trips", JSON.stringify(trips));
+  saveSharedState();
 }
 
 function escapeHtml(value) {
@@ -70,6 +71,18 @@ function formatPeriodDay(dayIndex) {
 
 function savePeriod() {
   localStorage.setItem("logiflow-period", JSON.stringify(periodSettings));
+  saveSharedState();
+}
+
+function saveSharedState() {
+  localStorage.setItem("logiflow-trips", JSON.stringify(trips));
+  localStorage.setItem("logiflow-period", JSON.stringify(periodSettings));
+  localStorage.setItem("logiflow-dashboard-range", JSON.stringify(dashboardRange));
+  window.logiFlowSync?.save({
+    trips,
+    periodSettings,
+    dashboardRange
+  });
 }
 
 function formatShortDate(dayIndex) {
@@ -139,6 +152,45 @@ function generatePeopleText() {
     }
     if (index < weekTrips.length - 1) lines.push("", "---", "");
   });
+
+  return lines.join("\n").trim();
+}
+
+function generateFinancialText() {
+  const weekTrips = getCurrentWeekTripsForText();
+  const headerDayIndex = autoTextDay === "all" ? (weekTrips.length ? weekTrips[0].dayIndex : 0) : Object.keys(DAYS).indexOf(autoTextDay);
+  const headerDate = formatShortDate(headerDayIndex);
+  const lines = [`📢 Olá, temos ${weekTrips.length} viagem(ns) que irão precisar de ajuda de custos para o dia ${headerDate}.`, "", "Por favor, adicione um saldo na conta CAJU dos motoristas.", ""];
+
+  if (!weekTrips.length) {
+    lines.push(autoTextDay === "all" ? "Nenhuma viagem cadastrada nesta semana." : "Nenhuma viagem cadastrada nesta data.");
+    return lines.join("\n").trim();
+  }
+
+  weekTrips.forEach((trip, index) => {
+    const totals = {};
+    trip.collaborators.forEach((person) => {
+      const company = person.helpType && person.helpType !== "Não informado" ? person.helpType : "Sem empresa";
+      const cost = Number(person.cost || 0);
+      if (cost > 0) totals[company] = (totals[company] || 0) + cost;
+    });
+
+    lines.push(`🧾 Viagem ${String(index + 1).padStart(2, "0")}:`);
+    lines.push(`- 🏙️ Município: ${(trip.municipality || "Não informado")}`);
+    lines.push(`- 🧍‍♂️ Solicitante: ${trip.requester || "Não informado"}`);
+    lines.push(`- 👨‍✈️ Motorista: ${trip.driver || "Não definido"}`);
+    lines.push(`- 👥 Total de colaboradores: ${trip.collaborators.length}`);
+    lines.push("- 🏢 Valores por empresa:");
+
+    const companyEntries = Object.entries(totals);
+    if (companyEntries.length) {
+      companyEntries.forEach(([company, total]) => lines.push(`   • ${company}: ${formatTextMoney(total)}`));
+    } else {
+      lines.push("   • Sem empresa: R$ 0,00");
+    }
+    lines.push("");
+  });
+
   return lines.join("\n").trim();
 }
 
@@ -153,9 +205,9 @@ function renderAutoText(type = "fuel") {
   select.innerHTML = currentOptions;
   select.value = Object.keys(DAYS).includes(selected) || selected === "all" ? selected : "all";
   autoTextDay = select.value;
-  const titles = { fuel: "Relatório de combustível", people: "Relatório de colaboradores", complete: "Resumo completo" };
+  const titles = { fuel: "Relatório de combustível", people: "Relatório de colaboradores", financial: "Solicitação financeira", complete: "Resumo completo" };
   document.querySelector("#autoTextTitle").textContent = titles[type];
-  const text = type === "people" ? generatePeopleText() : type === "complete" ? generateSummary() : generateFuelText();
+  const text = type === "people" ? generatePeopleText() : type === "financial" ? generateFinancialText() : type === "complete" ? generateSummary() : generateFuelText();
   document.querySelector("#autoTextArea").value = text;
 }
 
@@ -186,7 +238,7 @@ function render() {
   const selectedDayIndex = Object.keys(DAYS).indexOf(selectedDay);
   const selectedDate = formatPeriodDay(selectedDayIndex);
   tripList.innerHTML = dayTrips.map((trip, index) => {
-    const collaborators = trip.collaborators.map((person) => person.cost ? `${person.name} (${money(person.cost)})` : person.name).join("; ");
+    const collaborators = trip.collaborators.map((person) => person.cost ? `${person.name} (${person.helpType || "Ajuda"}: ${money(person.cost)})` : person.name).join("; ");
     const total = Number(trip.fuelCost) + trip.collaborators.reduce((sum, person) => sum + Number(person.cost || 0), 0);
     return `<article class="trip-card">
       <div class="trip-icon"><svg viewBox="0 0 24 24"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm11 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></div>
@@ -199,13 +251,18 @@ function render() {
   }).join("");
 }
 
-function addCollaboratorRow(name = "", cost = 0) {
+function addCollaboratorRow(name = "", cost = 0, helpType = "") {
   const row = document.createElement("div");
   row.className = "collaborator-row";
   row.innerHTML = `<input class="name-input" required placeholder="Nome do colaborador" value="${escapeHtml(name)}" />
     <button class="cost-toggle${cost ? " active" : ""}" type="button">Ajuda de custo</button>
-    <div class="money-input collaborator-cost${cost ? "" : " hidden"}"><span>R$</span><input class="cost-input" type="number" min="0" step="0.01" value="${cost || ""}" placeholder="0,00" /></div>
+    <div class="collaborator-help${cost ? "" : " hidden"}">
+      <select class="help-type-input" aria-label="Tipo da ajuda de custo"><option value="">Tipo da ajuda</option><option>PLURALMED EDUCAÇÃO</option><option>PLURALMED SOLUÇÕES</option><option>PLURALMED GESTÃO</option><option>IGEP SAÚDE</option><option>PRIMETECH</option><option>PLURALMED TECNOLOGIA</option></select>
+      <div class="money-input collaborator-cost"><span>R$</span><input class="cost-input" type="number" min="0" step="0.01" value="${cost || ""}" placeholder="0,00" /></div>
+    </div>
     <button class="remove-collaborator" type="button" title="Remover colaborador" aria-label="Remover colaborador"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button>`;
+  const typeSelect = row.querySelector(".help-type-input");
+  if (helpType) typeSelect.value = helpType;
   document.querySelector("#collaboratorRows").appendChild(row);
 }
 
@@ -354,7 +411,7 @@ function generateSummary() {
       lines.push(`   Horário de ida: ${trip.departureTime || "Não informado"}`);
       lines.push(`   Horário de volta: ${trip.returnTime || "Não informado"}`);
       lines.push(`   Colaboradores:`);
-      trip.collaborators.forEach((person) => lines.push(`   - ${person.name}: ajuda de custo ${money(person.cost || 0)}`));
+      trip.collaborators.forEach((person) => lines.push(`   - ${person.name}: ${person.helpType || "Não informado"} - ajuda de custo ${money(person.cost || 0)}`));
       lines.push(`   Custo de gasolina: ${money(trip.fuelCost)}`);
       lines.push(`   Total de ajuda de custo: ${money(helpTotal)}`);
       lines.push(`   Custo total da viagem: ${money(total)}`);
@@ -426,10 +483,10 @@ document.querySelector("#copyGeneratedButton").addEventListener("click", () => c
 document.querySelector("#collaboratorRows").addEventListener("click", (event) => {
   const costButton = event.target.closest(".cost-toggle");
   if (costButton) {
-    const costInput = costButton.nextElementSibling;
-    costInput.classList.toggle("hidden");
-    costButton.classList.toggle("active", !costInput.classList.contains("hidden"));
-    if (!costInput.classList.contains("hidden")) costInput.querySelector("input").focus();
+    const helpArea = costButton.nextElementSibling;
+    helpArea.classList.toggle("hidden");
+    costButton.classList.toggle("active", !helpArea.classList.contains("hidden"));
+    if (!helpArea.classList.contains("hidden")) helpArea.querySelector(".help-type-input").focus();
     return;
   }
   const removeButton = event.target.closest(".remove-collaborator");
@@ -443,7 +500,8 @@ tripForm.addEventListener("submit", (event) => {
   const data = new FormData(tripForm);
   const collaborators = Array.from(document.querySelectorAll(".collaborator-row")).map((row) => ({
     name: row.querySelector(".name-input").value.trim(),
-    cost: Number(row.querySelector(".cost-input").value || 0)
+    cost: Number(row.querySelector(".cost-input").value || 0),
+    helpType: row.querySelector(".help-type-input")?.value || "Não informado"
   })).filter((person) => person.name);
   if (!collaborators.length) return;
   const departureTime = String(data.get("departureTime")).trim();
@@ -475,6 +533,7 @@ document.querySelector("#dashboardStartDate").addEventListener("change", (event)
   dashboardRange.start = event.target.value;
   if (dashboardRange.end && dashboardRange.end < dashboardRange.start) dashboardRange.end = dashboardRange.start;
   localStorage.setItem("logiflow-dashboard-range", JSON.stringify(dashboardRange));
+  saveSharedState();
   renderDashboard();
 });
 
@@ -482,6 +541,7 @@ document.querySelector("#dashboardEndDate").addEventListener("change", (event) =
   dashboardRange.end = event.target.value;
   if (dashboardRange.start && dashboardRange.end < dashboardRange.start) dashboardRange.start = dashboardRange.end;
   localStorage.setItem("logiflow-dashboard-range", JSON.stringify(dashboardRange));
+  saveSharedState();
   renderDashboard();
 });
 
@@ -536,6 +596,42 @@ tripList.addEventListener("click", (event) => {
   trips[selectedDay].splice(Number(button.dataset.index), 1);
   save();
   render();
+
+  async function initializeSharedState() {
+    try {
+      const remote = await window.logiFlowSync.load();
+      if (remote && typeof remote === "object" && Object.keys(remote).length) {
+        applySharedState(remote);
+      } else {
+        saveSharedState();
+      }
+      window.logiFlowSync.subscribe((remoteState) => applySharedState(remoteState));
+    } catch (error) {
+      console.error("Não foi possível conectar ao armazenamento compartilhado:", error.message || error);
+    }
+  }
+
+  function applySharedState(state) {
+    if (!state || typeof state !== "object") return;
+    if (state.trips && typeof state.trips === "object") {
+      trips = state.trips;
+      Object.keys(DAYS).forEach((day) => {
+        if (!Array.isArray(trips[day])) trips[day] = [];
+      });
+      localStorage.setItem("logiflow-trips", JSON.stringify(trips));
+    }
+    if (state.periodSettings && typeof state.periodSettings === "object") {
+      periodSettings = state.periodSettings;
+      localStorage.setItem("logiflow-period", JSON.stringify(periodSettings));
+    }
+    if (state.dashboardRange && typeof state.dashboardRange === "object") {
+      dashboardRange = state.dashboardRange;
+      localStorage.setItem("logiflow-dashboard-range", JSON.stringify(dashboardRange));
+    }
+    render();
+  }
+
+  initializeSharedState();
 });
 
 render();
