@@ -68,6 +68,18 @@ window.logiFlowSync = (() => {
         }
       }
     });
+    if (!error && data?.session && data?.user) {
+      const { error: profileError } = await client.from("profiles").insert({
+        id: data.user.id,
+        login_code: loginCode.trim(),
+        display_name: displayName.trim(),
+        role: "consulta",
+        active: true
+      });
+      if (profileError) {
+        return { data, error: profileError };
+      }
+    }
     return { data, error };
   }
 

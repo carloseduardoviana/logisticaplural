@@ -35,32 +35,3 @@ create policy "Profiles insert own" on public.profiles
 drop policy if exists "Profiles update by general admin" on public.profiles;
 create policy "Profiles update by general admin" on public.profiles
   for update to authenticated using (public.is_general_admin()) with check (public.is_general_admin());
-
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = public, auth
-as $$
-begin
-  insert into public.profiles (id, login_code, display_name, role, active)
-  values (
-    new.id,
-    coalesce(nullif(trim(new.raw_user_meta_data->>'login_code'), ''), split_part(coalesce(new.email, new.id::text), '@', 1)),
-    coalesce(nullif(trim(new.raw_user_meta_data->>'display_name'), ''), 'Novo usuário'),
-    coalesce(nullif(trim(new.raw_user_meta_data->>'role'), ''), 'consulta'),
-    true
-  )
-  on conflict (id) do update set
-    login_code = excluded.login_code,
-    display_name = excluded.display_name,
-    role = excluded.role,
-    updated_at = now();
-  return new;
-end;
-$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
