@@ -716,6 +716,47 @@ function selectLoginMode(mode) {
 document.querySelector("#loginTab").addEventListener("click", () => selectLoginMode("login"));
 document.querySelector("#registerTab").addEventListener("click", () => selectLoginMode("register"));
 
+let cooldownTimer = null;
+
+function formatCooldown(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+}
+
+function startAuthCooldown(seconds = 300) {
+  const errorElement = document.querySelector("#loginError");
+  const submitButton = document.querySelector("#loginSubmit");
+  const endAt = Date.now() + seconds * 1000;
+  localStorage.setItem("logiflow-auth-cooldown", String(endAt));
+  clearInterval(cooldownTimer);
+
+  submitButton.disabled = true;
+  errorElement.className = "login-error";
+  errorElement.hidden = false;
+
+  const updateCooldown = () => {
+    const remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+    if (remaining > 0) {
+      errorElement.textContent = `Limite temporário. Nova tentativa em ${formatCooldown(remaining)}.`;
+      submitButton.disabled = true;
+      return;
+    }
+    clearInterval(cooldownTimer);
+    localStorage.removeItem("logiflow-auth-cooldown");
+    errorElement.hidden = true;
+    submitButton.disabled = false;
+  };
+
+  updateCooldown();
+  cooldownTimer = setInterval(updateCooldown, 1000);
+}
+
+const savedCooldown = Number(localStorage.getItem("logiflow-auth-cooldown") || 0);
+if (savedCooldown > Date.now()) {
+  startAuthCooldown(Math.ceil((savedCooldown - Date.now()) / 1000));
+}
+
 document.querySelector("#loginForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const errorElement = document.querySelector("#loginError");
@@ -770,7 +811,7 @@ document.querySelector("#loginForm").addEventListener("submit", async (event) =>
   } catch (error) {
     const message = String(error?.message || "");
     if (message.toLowerCase().includes("rate limit")) {
-      errorElement.textContent = "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.";
+      startAuthCooldown();
     } else if (message.toLowerCase().includes("database error saving new user")) {
       errorElement.textContent = "Não foi possível finalizar o cadastro. Tente outro código de login.";
     } else {
@@ -779,7 +820,9 @@ document.querySelector("#loginForm").addEventListener("submit", async (event) =>
     errorElement.className = "login-error";
     errorElement.hidden = false;
   } finally {
-    submitButton.disabled = false;
+    if (Number(localStorage.getItem("logiflow-auth-cooldown") || 0) <= Date.now()) {
+      submitButton.disabled = false;
+    }
   }
 });
 
