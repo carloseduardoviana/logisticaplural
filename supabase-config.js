@@ -5,7 +5,7 @@ window.logiFlowSync = (() => {
   const ROW_ID = "logiflow-main";
   const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
   let saveTimer = null;
-  const loginEmail = (loginCode) => `${String(loginCode).trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "")}@logisticaplural.app`;
+  const loginEmail = (loginCode) => `${String(loginCode).trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "")}@logisticaplural.com`;
 
   async function load() {
     const { data, error } = await client
@@ -41,10 +41,11 @@ window.logiFlowSync = (() => {
   }
 
   async function login(loginCode, password) {
-    return client.auth.signInWithPassword({
-      email: loginEmail(loginCode),
-      password
-    });
+    const email = loginEmail(loginCode);
+    const result = await client.auth.signInWithPassword({ email, password });
+    if (!result.error) return result;
+    const legacyEmail = `${email.slice(0, email.lastIndexOf("@"))}@logisticaplural.app`;
+    return client.auth.signInWithPassword({ email: legacyEmail, password });
   }
 
   async function logout() {
