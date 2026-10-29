@@ -22,7 +22,11 @@ window.logiFlowSync = (() => {
       const { error } = await client
         .from(TABLE)
         .upsert({ id: ROW_ID, data: state, updated_at: new Date().toISOString() }, { onConflict: "id" });
-      if (error) console.error("Não foi possível salvar os dados compartilhados:", error.message);
+      if (error) {
+        console.error("Não foi possível salvar os dados compartilhados:", error.message);
+        return false;
+      }
+      return true;
     }, 250);
   }
 

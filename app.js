@@ -596,42 +596,42 @@ tripList.addEventListener("click", (event) => {
   trips[selectedDay].splice(Number(button.dataset.index), 1);
   save();
   render();
-
-  async function initializeSharedState() {
-    try {
-      const remote = await window.logiFlowSync.load();
-      if (remote && typeof remote === "object" && Object.keys(remote).length) {
-        applySharedState(remote);
-      } else {
-        saveSharedState();
-      }
-      window.logiFlowSync.subscribe((remoteState) => applySharedState(remoteState));
-    } catch (error) {
-      console.error("Não foi possível conectar ao armazenamento compartilhado:", error.message || error);
-    }
-  }
-
-  function applySharedState(state) {
-    if (!state || typeof state !== "object") return;
-    if (state.trips && typeof state.trips === "object") {
-      trips = state.trips;
-      Object.keys(DAYS).forEach((day) => {
-        if (!Array.isArray(trips[day])) trips[day] = [];
-      });
-      localStorage.setItem("logiflow-trips", JSON.stringify(trips));
-    }
-    if (state.periodSettings && typeof state.periodSettings === "object") {
-      periodSettings = state.periodSettings;
-      localStorage.setItem("logiflow-period", JSON.stringify(periodSettings));
-    }
-    if (state.dashboardRange && typeof state.dashboardRange === "object") {
-      dashboardRange = state.dashboardRange;
-      localStorage.setItem("logiflow-dashboard-range", JSON.stringify(dashboardRange));
-    }
-    render();
-  }
-
-  initializeSharedState();
 });
 
 render();
+
+async function initializeSharedState() {
+  try {
+    const remote = await window.logiFlowSync.load();
+    if (remote && typeof remote === "object" && Object.keys(remote).length) {
+      applySharedState(remote);
+    } else {
+      saveSharedState();
+    }
+    window.logiFlowSync.subscribe((remoteState) => applySharedState(remoteState));
+  } catch (error) {
+    console.error("Não foi possível conectar ao armazenamento compartilhado:", error.message || error);
+  }
+}
+
+function applySharedState(state) {
+  if (!state || typeof state !== "object") return;
+  if (state.trips && typeof state.trips === "object") {
+    trips = state.trips;
+    Object.keys(DAYS).forEach((day) => {
+      if (!Array.isArray(trips[day])) trips[day] = [];
+    });
+    localStorage.setItem("logiflow-trips", JSON.stringify(trips));
+  }
+  if (state.periodSettings && typeof state.periodSettings === "object") {
+    periodSettings = state.periodSettings;
+    localStorage.setItem("logiflow-period", JSON.stringify(periodSettings));
+  }
+  if (state.dashboardRange && typeof state.dashboardRange === "object") {
+    dashboardRange = state.dashboardRange;
+    localStorage.setItem("logiflow-dashboard-range", JSON.stringify(dashboardRange));
+  }
+  render();
+}
+
+initializeSharedState();
