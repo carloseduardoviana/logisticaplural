@@ -7,7 +7,17 @@ const DAYS = {
 };
 
 let selectedDay = "segunda";
+let currentProfile = null;
 const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+let drivers = JSON.parse(localStorage.getItem("logiflow-drivers") || "[]");
+if (!Array.isArray(drivers)) drivers = [];
+if (!drivers.length) {
+  drivers = [
+    "Francisco Isac Sousa de Jesus", "José Leonel da Silva", "Jemios Alves Pereira",
+    "Jamiro Lopes de Sousa", "Fernando Antonio Alves Maia", "Carlos Fernandes Pereira",
+    "Júnior Javi", "Colaborador Externo"
+  ];
+}
 let periodSettings = JSON.parse(localStorage.getItem("logiflow-period") || '{"weekStart":""}');
 let dashboardRange = JSON.parse(localStorage.getItem("logiflow-dashboard-range") || '{"start":"","end":""}');
 if (!periodSettings.weekStart) {
@@ -75,13 +85,16 @@ function savePeriod() {
 }
 
 function saveSharedState() {
+  if (!currentProfile || currentProfile.active === false) return;
   localStorage.setItem("logiflow-trips", JSON.stringify(trips));
   localStorage.setItem("logiflow-period", JSON.stringify(periodSettings));
   localStorage.setItem("logiflow-dashboard-range", JSON.stringify(dashboardRange));
+  localStorage.setItem("logiflow-drivers", JSON.stringify(drivers));
   window.logiFlowSync?.save({
     trips,
     periodSettings,
-    dashboardRange
+    dashboardRange,
+    drivers
   });
 }
 
@@ -380,6 +393,7 @@ function renderWeekHeader() {
 function openModal() {
   modalBackdrop.hidden = false;
   tripForm.reset();
+  renderDriverOptions();
   document.querySelector("#collaboratorRows").innerHTML = "";
   addCollaboratorRow();
   tripForm.elements.requester.focus();
@@ -554,6 +568,7 @@ document.querySelectorAll(".nav-item[data-view]").forEach((button) => {
     document.querySelector("#kmScreen").hidden = view !== "km";
     document.querySelector("#dashboardScreen").hidden = view !== "dashboard";
     document.querySelector("#textScreen").hidden = view !== "text";
+    document.querySelector("#settingsScreen").hidden = view !== "settings";
     if (view === "km") renderKmTable();
     if (view === "dashboard") renderDashboard();
     if (view === "text") renderAutoText(document.querySelector(".auto-text-button.active")?.dataset.textType || "fuel");
@@ -631,7 +646,238 @@ function applySharedState(state) {
     dashboardRange = state.dashboardRange;
     localStorage.setItem("logiflow-dashboard-range", JSON.stringify(dashboardRange));
   }
+  if (Array.isArray(state.drivers)) {
+    drivers = state.drivers.filter((name) => typeof name === "string" && name.trim());
+    localStorage.setItem("logiflow-drivers", JSON.stringify(drivers));
+    renderDriverOptions();
+    renderDrivers();
+  }
   render();
 }
 
 initializeSharedState();
+
+const roleLabels = {
+  adm_geral: "Administrador geral",
+  administrador: "Administrador",
+  operador: "Operador",
+  consulta: "Consulta"
+};
+
+async function showLoginOrApp() {
+  currentProfile = await window.logiFlowSync.getCurrentProfile();
+  if (currentProfile && currentProfile.active !== false) {
+    document.querySelector("#loginOverlay").hidden = true;
+    applyCurrentProfile();
+    saveSharedState();
+  } else {
+    document.querySelector("#loginOverlay").hidden = false;
+  }
+}
+
+function applyCurrentProfile() {
+  if (!currentProfile) return;
+  document.querySelector(".sidebar-footer strong").textContent = currentProfile.display_name || currentProfile.login_code || "Usuário";
+  document.querySelector(".sidebar-footer span").textContent = roleLabels[currentProfile.role] || "Consulta";
+  document.querySelector(".avatar").textContent = (currentProfile.display_name || currentProfile.login_code || "U")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+  const canManage = currentProfile.role === "adm_geral";
+  document.querySelector("#settingsNav").hidden = false;
+  document.querySelector("#newAccountPanel").hidden = !canManage;
+  document.querySelector("#accountsPanel").hidden = !canManage;
+  document.querySelector("#driversPanel").hidden = !canManage;
+}
+
+document.querySelector("#loginForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const loginCode = document.querySelector("#loginCode").value;
+  const password = document.querySelector("#loginPassword").value;
+  const errorElement = document.querySelector("#loginError");
+  errorElement.hidden = true;
+  const { data, error } = await window.logiFlowSync.login(loginCode, password);
+  if (error || !data?.session) {
+    errorElement.textContent = "Código ou senha inválidos, ou a conta ainda não foi confirmada.";
+    errorElement.hidden = false;
+    return;
+  }
+  currentProfile = await window.logiFlowSync.getCurrentProfile();
+  if (!currentProfile || currentProfile.active === false) {
+    await window.logiFlowSync.logout();
+    errorElement.textContent = "Esta conta está inativa.";
+    errorElement.hidden = false;
+    return;
+  }
+  document.querySelector("#loginOverlay").hidden = true;
+  applyCurrentProfile();
+  saveSharedState();
+});
+
+document.querySelector("#logoutButton").addEventListener("click", async () => {
+  await window.logiFlowSync.logout();
+  currentProfile = null;
+  document.querySelector("#loginOverlay").hidden = false;
+  document.querySelector("#loginPassword").value = "";
+});
+
+document.querySelector("#passwordForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const password = String(data.get("password"));
+  const confirmation = String(data.get("passwordConfirmation"));
+  const message = document.querySelector("#passwordMessage");
+  message.hidden = false;
+  if (password !== confirmation) {
+    message.textContent = "As senhas não coincidem.";
+    message.className = "settings-message error";
+    return;
+  }
+  try {
+    const { error } = await window.logiFlowSync.changePassword(password);
+    if (error) throw error;
+    form.reset();
+    message.textContent = "Senha alterada com sucesso.";
+    message.className = "settings-message success";
+  } catch (error) {
+    message.textContent = error.message || "Não foi possível alterar a senha.";
+    message.className = "settings-message error";
+  }
+});
+
+function renderDriverOptions() {
+  const select = document.querySelector("#tripDriver");
+  if (!select) return;
+  const currentValue = select.value;
+  select.innerHTML = `<option value="">Selecione o motorista</option>${drivers.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")}`;
+  if (drivers.includes(currentValue)) select.value = currentValue;
+}
+
+function renderDrivers() {
+  const list = document.querySelector("#driversList");
+  if (!list) return;
+  list.innerHTML = drivers.map((name, index) => `
+    <div class="driver-row" data-driver-index="${index}">
+      <strong>${escapeHtml(name)}</strong>
+      <button class="driver-remove" type="button" aria-label="Remover ${escapeHtml(name)}">Remover</button>
+    </div>
+  `).join("") || "<p>Nenhum motorista cadastrado.</p>";
+  renderDriverOptions();
+}
+
+document.querySelector("#driverForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const name = String(data.get("driverName")).trim();
+  if (!name) return;
+  if (drivers.some((driver) => driver.toLocaleLowerCase("pt-BR") === name.toLocaleLowerCase("pt-BR"))) {
+    alert("Este motorista já está cadastrado.");
+    return;
+  }
+  drivers.push(name);
+  drivers.sort((a, b) => a.localeCompare(b, "pt-BR"));
+  form.reset();
+  renderDrivers();
+  saveSharedState();
+});
+
+document.querySelector("#driversList").addEventListener("click", (event) => {
+  const button = event.target.closest(".driver-remove");
+  if (!button) return;
+  const row = button.closest(".driver-row");
+  drivers.splice(Number(row.dataset.driverIndex), 1);
+  renderDrivers();
+  saveSharedState();
+});
+
+async function renderAccounts() {
+  const list = document.querySelector("#accountsList");
+  try {
+    const accounts = await window.logiFlowSync.getAccounts();
+    list.innerHTML = accounts.map((account) => `
+      <div class="account-row" data-account-id="${escapeHtml(account.id)}">
+        <div><strong>${escapeHtml(account.display_name)}</strong><span>${escapeHtml(account.login_code)}</span></div>
+        <select class="role-select" aria-label="Cargo de ${escapeHtml(account.display_name)}">
+          ${Object.entries(roleLabels).map(([value, label]) => `<option value="${value}" ${account.role === value ? "selected" : ""}>${label}</option>`).join("")}
+        </select>
+        <button class="account-status ${account.active ? "active" : "inactive"}" type="button">${account.active ? "Ativa" : "Inativa"}</button>
+      </div>
+    `).join("") || "<p>Nenhuma conta cadastrada.</p>";
+  } catch (error) {
+    list.innerHTML = `<p>Não foi possível carregar as contas. ${escapeHtml(error.message || "")}</p>`;
+  }
+}
+
+document.querySelector("#accountForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const button = form.querySelector("button[type='submit']");
+  button.disabled = true;
+  try {
+    const adminSession = await window.logiFlowSync.client.auth.getSession();
+    const result = await window.logiFlowSync.createAccount(
+      String(data.get("displayName")),
+      String(data.get("loginCode")),
+      String(data.get("password")),
+      String(data.get("role"))
+    );
+    if (result.error) throw result.error;
+    if (adminSession?.data?.session) {
+      await window.logiFlowSync.client.auth.setSession({
+        access_token: adminSession.data.session.access_token,
+        refresh_token: adminSession.data.session.refresh_token
+      });
+    }
+    form.reset();
+    await renderAccounts();
+    const toast = document.querySelector("#toast");
+    toast.textContent = "Conta criada com sucesso";
+    toast.classList.add("show");
+    setTimeout(() => { toast.textContent = "Texto copiado"; toast.classList.remove("show"); }, 2200);
+  } catch (error) {
+    alert(error.message || "Não foi possível criar a conta.");
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.querySelector("#accountsList").addEventListener("change", async (event) => {
+  if (!event.target.classList.contains("role-select")) return;
+  const row = event.target.closest(".account-row");
+  try {
+    await window.logiFlowSync.updateAccount(row.dataset.accountId, { role: event.target.value, updated_at: new Date().toISOString() });
+  } catch (error) {
+    alert(error.message || "Não foi possível alterar o cargo.");
+    await renderAccounts();
+  }
+});
+
+document.querySelector("#accountsList").addEventListener("click", async (event) => {
+  const button = event.target.closest(".account-status");
+  if (!button) return;
+  const row = button.closest(".account-row");
+  const active = button.classList.contains("inactive");
+  try {
+    await window.logiFlowSync.updateAccount(row.dataset.accountId, { active, updated_at: new Date().toISOString() });
+    await renderAccounts();
+  } catch (error) {
+    alert(error.message || "Não foi possível alterar o status.");
+  }
+});
+
+document.querySelector("#settingsNav").addEventListener("click", () => {
+  renderDriverOptions();
+  if (currentProfile?.role === "adm_geral") {
+    renderDrivers();
+    renderAccounts();
+  }
+});
+
+renderDriverOptions();
+showLoginOrApp();

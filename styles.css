@@ -30,6 +30,37 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .sidebar-footer span { margin-top: 3px; font-size: 11px; color: var(--muted); }
 .main { width: calc(100% - 238px); margin-left: 238px; min-height: 100vh; padding: 0 42px 60px; }
 .screen[hidden] { display: none; }
+.login-overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: linear-gradient(135deg, #edf4f1, #dceae5); }
+.login-overlay[hidden] { display: none; }
+.login-card { width: min(420px, 100%); display: grid; gap: 14px; background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(24, 54, 45, .16); padding: 32px; }
+.login-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-family: Manrope, sans-serif; font-size: 20px; color: var(--ink); }
+.login-card h1 { font-size: 25px; }
+.login-card label, .account-form label { display: grid; gap: 7px; color: #4d5963; font-size: 12px; font-weight: 700; }
+.login-card input, .account-form input, .account-form select { width: 100%; border: 1px solid #dfe4e2; border-radius: 7px; background: #fbfcfb; padding: 11px 12px; color: var(--ink); outline: none; }
+.login-card input:focus, .account-form input:focus, .account-form select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(14,122,95,.08); }
+.login-error { color: #b42318; font-size: 13px; }
+.settings-content { padding-top: 24px; }
+.settings-grid { display: grid; grid-template-columns: minmax(260px, 380px) 1fr; gap: 18px; }
+.settings-panel { border: 1px solid var(--line); border-radius: 9px; background: white; }
+.account-form { display: grid; gap: 14px; padding: 18px; }
+.settings-message { margin: 0; font-size: 12px; font-weight: 700; }
+.settings-message.success { color: var(--green-dark); }
+.settings-message.error { color: #b42318; }
+.driver-form { border-bottom: 1px solid var(--line); }
+.drivers-list { padding: 8px 18px 18px; }
+.driver-row { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); }
+.driver-row:last-child { border-bottom: 0; }
+.driver-row strong { font-size: 13px; }
+.driver-remove { border: 0; border-radius: 7px; padding: 7px 9px; color: #b42318; background: #fff0ee; font-size: 11px; font-weight: 700; }
+.accounts-list { padding: 8px 18px 18px; }
+.account-row { min-height: 72px; display: grid; grid-template-columns: 1fr 170px 100px; gap: 10px; align-items: center; border-bottom: 1px solid var(--line); }
+.account-row:last-child { border-bottom: 0; }
+.account-row strong, .account-row span { display: block; }
+.account-row span { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.role-select { border: 1px solid var(--line); border-radius: 7px; padding: 9px; background: white; }
+.account-status { border: 0; border-radius: 7px; padding: 9px; font-weight: 700; cursor: pointer; }
+.account-status.active { color: #087a5c; background: var(--green-soft); }
+.account-status.inactive { color: #b42318; background: #fff0ee; }
 .km-content { padding-top: 6px; }
 .km-head { height: 92px; }
 .km-table-wrap { border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; background: white; }
@@ -193,3 +224,4 @@ h2 { font-size: 21px; }
 @media (max-width: 900px) { .sidebar { width: 72px; padding-inline: 12px; } .brand { padding: 0 6px; } .brand > span:last-child, .nav-item span, .sidebar-footer > div:not(.avatar) { display: none; } .nav-item { justify-content: center; padding: 0; } .sidebar-footer { justify-content: center; padding-inline: 0; } .main { width: calc(100% - 72px); margin-left: 72px; padding-inline: 24px; } .summary-strip { grid-template-columns: 120px 140px 1fr; } .summary-strip .outline-button { grid-column: 1 / -1; margin: 8px 16px 16px; } }
 @media (max-width: 900px) { .dashboard-range { flex-wrap: wrap; } .dashboard-range input { min-width: 150px; } .dashboard-cards { grid-template-columns: 1fr 1fr; } .dashboard-grid { grid-template-columns: 1fr; } }
 @media (max-width: 680px) { .auto-text-options { grid-template-columns: 1fr; }  .auto-text-day-filter label { grid-template-columns: 1fr; } .auto-text-day-filter select { width: 100%; } .vehicle-chart { min-height: 270px; padding-right: 8px; } .vehicle-bar-row { grid-template-columns: 92px 1fr 82px; } .vehicle-bar-label { padding-right: 7px; font-size: 10px; } .vehicle-bar-label strong { max-width: 82px; } .vehicle-bar-value { font-size: 10px; padding-left: 4px; } .dashboard-cards { grid-template-columns: 1fr 1fr; } .metric-card { min-height: 100px; padding: 14px; } .metric-card strong { font-size: 18px; } .period-controls { grid-template-columns: 1fr; } .day-dates { grid-template-columns: repeat(5, 130px); } body { display: block; } .sidebar { position: fixed; width: 100%; height: 64px; inset: auto 0 0; border-right: 0; border-top: 1px solid var(--line); padding: 8px 12px; flex-direction: row; } .brand, .sidebar-footer { display: none; } .nav { margin: 0; width: 100%; grid-template-columns: repeat(5, 1fr); } .nav-item span { display: none; } .main { width: 100%; margin: 0 0 64px; padding: 0 16px 30px; } .topbar { height: 88px; } h1 { font-size: 22px; } .week-toolbar { height: 78px; overflow-x: auto; grid-template-columns: repeat(5, 104px); } .day-tab { grid-template-columns: 1fr 24px; padding: 8px; } .day-tab span { display: none; } .content-head { height: 94px; } .content-head .primary-button { width: 44px; padding: 0; font-size: 0; } .content-head .primary-button svg { width: 21px; } .summary-strip { grid-template-columns: 1fr 1fr; } .summary-strip > div { padding: 0 14px; } .summary-strip > div:nth-child(3) { grid-column: 1 / -1; border-right: 0; border-top: 1px solid var(--line); height: 58px; padding-top: 8px; } .trip-card { grid-template-columns: 50px 1fr 40px; min-height: 150px; } .trip-card .info-cost { grid-column: 2 / 3; } .delete-button { grid-column: 3; grid-row: 1 / 3; } .form-grid { grid-template-columns: 1fr; } .collaborator-row { grid-template-columns: 1fr 36px; } .collaborator-row .name-input { grid-column: 1 / -1; } .cost-toggle { grid-column: 1 / 2; } .collaborator-cost { grid-column: 1 / 2; width: 100%; } .remove-collaborator { grid-column: 2; grid-row: 2; } }
+@media (max-width: 680px) { .settings-grid { grid-template-columns: 1fr; } .account-row { grid-template-columns: 1fr; padding: 12px 0; } }

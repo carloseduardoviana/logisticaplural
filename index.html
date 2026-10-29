@@ -10,6 +10,17 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="login-overlay" id="loginOverlay">
+    <form class="login-card" id="loginForm">
+      <div class="login-brand"><span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></span><strong>LogiFlow</strong></div>
+      <p class="section-kicker">ACESSO AO SISTEMA</p>
+      <h1>Entrar na conta</h1>
+      <label>Código de login<input id="loginCode" autocomplete="username" required placeholder="Ex: Carlos Eduardo" /></label>
+      <label>Senha<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
+      <p class="login-error" id="loginError" hidden></p>
+      <button class="primary-button" type="submit">Entrar</button>
+    </form>
+  </div>
   <aside class="sidebar">
     <a class="brand" href="#" aria-label="LogiFlow início">
       <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></span>
@@ -21,7 +32,7 @@
       <button class="nav-item active" data-view="trips" type="button"><svg viewBox="0 0 24 24"><path d="M7 2v2H5a2 2 0 0 0-2 2v14h18V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7Zm12 8H5v8h14v-8Z"/></svg><span>Viagens</span></button>
       <button class="nav-item" data-view="km" type="button"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0Zm6 0h6M12 9v6"/></svg><span>Registro de KM</span></button>
       <button class="nav-item" data-view="text" type="button"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg><span>Texto Automático</span></button>
-      <button class="nav-item" type="button"><svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Zm0-13 2 2 3-.5.5 3 2 2-1 3 1 3-2 2-.5 3-3-.5-2 2-2-2-3 .5-.5-3-2-2 1-3-1-3 2-2 .5-3 3 .5 2-2Z"/></svg><span>Configurações</span></button>
+      <button class="nav-item" data-view="settings" type="button" id="settingsNav"><svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Zm0-13 2 2 3-.5.5 3 2 2-1 3 1 3-2 2-.5 3-3-.5-2 2-2-2-3 .5-.5-3-2-2 1-3-1-3 2-2 .5-3 3 .5 2-2Z"/></svg><span>Configurações</span></button>
     </nav>
 
     <div class="sidebar-footer">
@@ -145,6 +156,53 @@
     </section>
   </main>
 
+  <main class="main screen" id="settingsScreen" hidden>
+    <header class="topbar">
+      <div><p class="eyebrow">ADMINISTRAÇÃO</p><h1>Configurações</h1></div>
+      <button class="outline-button" id="logoutButton" type="button">Sair</button>
+    </header>
+    <section class="settings-content">
+      <div class="settings-grid">
+        <section class="settings-panel">
+          <div class="panel-head"><div><p class="section-kicker">SEGURANÇA</p><h2>Trocar minha senha</h2></div></div>
+          <form class="account-form" id="passwordForm">
+            <label>Nova senha<input name="password" type="password" minlength="8" required /></label>
+            <label>Confirmar nova senha<input name="passwordConfirmation" type="password" minlength="8" required /></label>
+            <p class="settings-message" id="passwordMessage" hidden></p>
+            <button class="primary-button" type="submit">Salvar nova senha</button>
+          </form>
+        </section>
+        <section class="settings-panel" id="driversPanel">
+          <div class="panel-head"><div><p class="section-kicker">CADASTRO</p><h2>Motoristas</h2></div></div>
+          <form class="account-form driver-form" id="driverForm">
+            <label>Nome do motorista<input name="driverName" required placeholder="Nome completo" /></label>
+            <button class="primary-button" type="submit">Adicionar motorista</button>
+          </form>
+          <div class="drivers-list" id="driversList"></div>
+        </section>
+        <section class="settings-panel" id="newAccountPanel">
+          <div class="panel-head"><div><p class="section-kicker">CONTAS</p><h2>Nova conta</h2></div></div>
+          <form class="account-form" id="accountForm">
+            <label>Nome<input name="displayName" required placeholder="Nome completo" /></label>
+            <label>Código de login<input name="loginCode" required placeholder="Ex: Maria Silva" /></label>
+            <label>Senha temporária<input name="password" type="password" minlength="8" required /></label>
+            <label>Cargo<select name="role" required>
+              <option value="adm_geral">Administrador geral</option>
+              <option value="administrador">Administrador</option>
+              <option value="operador">Operador</option>
+              <option value="consulta">Consulta</option>
+            </select></label>
+            <button class="primary-button" type="submit">Criar conta</button>
+          </form>
+        </section>
+        <section class="settings-panel accounts-panel" id="accountsPanel">
+          <div class="panel-head"><div><p class="section-kicker">GESTÃO</p><h2>Contas do sistema</h2></div></div>
+          <div class="accounts-list" id="accountsList"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
   <div class="modal-backdrop" id="modalBackdrop" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-header">
@@ -155,7 +213,7 @@
         <label>Quem solicitou a viagem<input name="requester" required placeholder="Nome do solicitante" /></label>
         <label>Município<input name="municipality" required placeholder="Cidade ou município de destino" /></label>
         <label>Custeio<select name="funding" required><option value="">Selecione o custeio</option><option>IGEP SAÚDE</option><option>CEPHRECE</option><option>PLURALMED GESTÃO</option><option>PLURALMED EDUCAÇÃO</option><option>PLURALMED TECNOLOGIAS</option><option>PRIMETECH</option></select></label>
-        <label>Motorista<select name="driver" required><option value="">Selecione o motorista</option><option>Francisco Isac Sousa de Jesus</option><option>José Leonel da Silva</option><option>Jemios Alves Pereira</option><option>Jamiro Lopes de Sousa</option><option>Fernando Antonio Alves Maia</option><option>Carlos Fernandes Pereira</option><option>Júnior Javi</option><option>Colaborador Externo</option></select></label>
+        <label>Motorista<select name="driver" id="tripDriver" required><option value="">Selecione o motorista</option></select></label>
         <label>Veículo (placa)<input name="vehicle" required placeholder="Ex: ABC1D23" /></label>
         <div class="form-grid">
           <label>Horário de ida<input name="departureTime" required type="time" /></label>
