@@ -42,10 +42,21 @@ window.logiFlowSync = (() => {
 
   async function login(loginCode, password) {
     const email = loginEmail(loginCode);
-    const result = await client.auth.signInWithPassword({ email, password });
-    if (!result.error) return result;
-    const legacyEmail = `${email.slice(0, email.lastIndexOf("@"))}@logisticaplural.app`;
-    return client.auth.signInWithPassword({ email: legacyEmail, password });
+    const { data: resolvedEmail } = await client.rpc("get_login_email", {
+      p_login_code: loginCode.trim()
+    });
+    const candidates = [
+      resolvedEmail,
+      email,
+      `${email.slice(0, email.lastIndexOf("@"))}@logisticaplural.app`
+    ].filter(Boolean);
+
+    let lastResult = null;
+    for (const candidate of [...new Set(candidates.map((item) => String(item).trim().toLowerCase()))]) {
+      lastResult = await client.auth.signInWithPassword({ email: candidate, password });
+      if (!lastResult.error) return lastResult;
+    }
+    return lastResult || { data: { user: null, session: null }, error: new Error("Código ou senha inválidos.") };
   }
 
   async function logout() {
@@ -70,13 +81,14 @@ window.logiFlowSync = (() => {
       }
     });
     if (!error && data?.session && data?.user) {
-      const { error: profileError } = await client.from("profiles").insert({
+      const { error: profileError } = await client.from("profiles").upsert({
         id: data.user.id,
         login_code: loginCode.trim(),
         display_name: displayName.trim(),
+        auth_email: email,
         role: "consulta",
         active: true
-      });
+      }, { onConflict: "id" });
       if (profileError) {
         return { data, error: profileError };
       }
