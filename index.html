@@ -7,18 +7,31 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261029" />
+  <link rel="stylesheet" href="styles.css?v=202610291435" />
 </head>
 <body>
   <div class="login-overlay" id="loginOverlay">
     <form class="login-card" id="loginForm">
       <div class="login-brand"><span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></span><strong>LogiFlow</strong></div>
       <p class="section-kicker">ACESSO AO SISTEMA</p>
-      <h1>Entrar na conta</h1>
-      <label>Código de login<input id="loginCode" autocomplete="username" required placeholder="Ex: Carlos Eduardo" /></label>
-      <label>Senha<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
+      <div class="login-tabs" role="tablist" aria-label="Opções de acesso">
+        <button class="login-tab active" id="loginTab" type="button" role="tab" aria-selected="true">Entrar</button>
+        <button class="login-tab" id="registerTab" type="button" role="tab" aria-selected="false">Cadastrar</button>
+      </div>
+      <div id="loginFields">
+        <h1>Entrar na conta</h1>
+        <label>Código de login<input id="loginCode" autocomplete="username" required placeholder="Ex: Carlos Eduardo" /></label>
+        <label>Senha<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
+      </div>
+      <div id="registerFields" hidden>
+        <h1>Criar conta</h1>
+        <label>Nome<input id="registerName" autocomplete="name" placeholder="Nome completo" /></label>
+        <label>Código de login<input id="registerCode" autocomplete="username" placeholder="Ex: Maria Silva" /></label>
+        <label>Senha<input id="registerPassword" type="password" autocomplete="new-password" minlength="8" /></label>
+        <label>Confirmar senha<input id="registerPasswordConfirmation" type="password" autocomplete="new-password" minlength="8" /></label>
+      </div>
       <p class="login-error" id="loginError" hidden></p>
-      <button class="primary-button" type="submit">Entrar</button>
+      <button class="primary-button" id="loginSubmit" type="submit">Entrar</button>
     </form>
   </div>
   <aside class="sidebar">
@@ -243,7 +256,7 @@
 
   <div class="toast" id="toast" role="status">Texto copiado</div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="supabase-config.js?v=20261029"></script>
-  <script src="app.js?v=20261029"></script>
+  <script src="supabase-config.js?v=202610291435"></script>
+  <script src="app.js?v=202610291435"></script>
 </body>
 </html>

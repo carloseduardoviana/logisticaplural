@@ -693,28 +693,87 @@ function applyCurrentProfile() {
   document.querySelector("#driversPanel").hidden = !canManage;
 }
 
+let loginMode = "login";
+
+function selectLoginMode(mode) {
+  loginMode = mode;
+  const isLogin = mode === "login";
+  document.querySelector("#loginFields").hidden = !isLogin;
+  document.querySelector("#registerFields").hidden = isLogin;
+  document.querySelector("#loginCode").required = isLogin;
+  document.querySelector("#loginPassword").required = isLogin;
+  ["#registerName", "#registerCode", "#registerPassword", "#registerPasswordConfirmation"].forEach((selector) => {
+    document.querySelector(selector).required = !isLogin;
+  });
+  document.querySelector("#loginTab").classList.toggle("active", isLogin);
+  document.querySelector("#registerTab").classList.toggle("active", !isLogin);
+  document.querySelector("#loginTab").setAttribute("aria-selected", String(isLogin));
+  document.querySelector("#registerTab").setAttribute("aria-selected", String(!isLogin));
+  document.querySelector("#loginSubmit").textContent = isLogin ? "Entrar" : "Cadastrar";
+  document.querySelector("#loginError").hidden = true;
+}
+
+document.querySelector("#loginTab").addEventListener("click", () => selectLoginMode("login"));
+document.querySelector("#registerTab").addEventListener("click", () => selectLoginMode("register"));
+
 document.querySelector("#loginForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const loginCode = document.querySelector("#loginCode").value;
-  const password = document.querySelector("#loginPassword").value;
   const errorElement = document.querySelector("#loginError");
+  const submitButton = document.querySelector("#loginSubmit");
   errorElement.hidden = true;
-  const { data, error } = await window.logiFlowSync.login(loginCode, password);
-  if (error || !data?.session) {
-    errorElement.textContent = "Código ou senha inválidos, ou a conta ainda não foi confirmada.";
+  submitButton.disabled = true;
+
+  try {
+    if (loginMode === "register") {
+      const displayName = document.querySelector("#registerName").value.trim();
+      const loginCode = document.querySelector("#registerCode").value.trim();
+      const password = document.querySelector("#registerPassword").value;
+      const confirmation = document.querySelector("#registerPasswordConfirmation").value;
+
+      if (!displayName || !loginCode || !password) throw new Error("Preencha nome, código de login e senha.");
+      if (password !== confirmation) throw new Error("As senhas não coincidem.");
+
+      const result = await window.logiFlowSync.createAccount(displayName, loginCode, password, "consulta");
+      if (result.error) throw result.error;
+
+      if (result.data?.session) {
+        currentProfile = await window.logiFlowSync.getCurrentProfile();
+        document.querySelector("#loginOverlay").hidden = true;
+        applyCurrentProfile();
+        saveSharedState();
+        return;
+      }
+
+      selectLoginMode("login");
+      document.querySelector("#loginCode").value = loginCode;
+      document.querySelector("#loginPassword").value = "";
+      errorElement.textContent = "Conta cadastrada. Informe a senha para entrar.";
+      errorElement.className = "settings-message success";
+      errorElement.hidden = false;
+      return;
+    }
+
+    const loginCode = document.querySelector("#loginCode").value.trim();
+    const password = document.querySelector("#loginPassword").value;
+    const { data, error } = await window.logiFlowSync.login(loginCode, password);
+    if (error || !data?.session) {
+      throw new Error("Código ou senha inválidos.");
+    }
+    currentProfile = await window.logiFlowSync.getCurrentProfile();
+    if (!currentProfile || currentProfile.active === false) {
+      await window.logiFlowSync.logout();
+      throw new Error("Esta conta está inativa.");
+    }
+    document.querySelector("#loginOverlay").hidden = true;
+    applyCurrentProfile();
+    saveSharedState();
+  } catch (error) {
+    errorElement.textContent = error.message || "Não foi possível concluir a operação.";
+    errorElement.className = "login-error";
     errorElement.hidden = false;
-    return;
+  } finally {
+    submitButton.disabled = false;
   }
-  currentProfile = await window.logiFlowSync.getCurrentProfile();
-  if (!currentProfile || currentProfile.active === false) {
-    await window.logiFlowSync.logout();
-    errorElement.textContent = "Esta conta está inativa.";
-    errorElement.hidden = false;
-    return;
-  }
-  document.querySelector("#loginOverlay").hidden = true;
-  applyCurrentProfile();
-  saveSharedState();
 });
 
 document.querySelector("#logoutButton").addEventListener("click", async () => {
@@ -880,4 +939,5 @@ document.querySelector("#settingsNav").addEventListener("click", () => {
 });
 
 renderDriverOptions();
+selectLoginMode("login");
 showLoginOrApp();
