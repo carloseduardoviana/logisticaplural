@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Sistema de Logística - Pluralmed</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2026103004" />
+  <link rel="stylesheet" href="styles.css?v=2026103005" />
 </head>
 <body>
   <div class="login-overlay" id="loginOverlay">
@@ -252,8 +255,19 @@
   </div>
 
   <div class="toast" id="toast" role="status">Texto copiado</div>
+  <script>
+    // Evita que navegador reutilize recursos antigos entre atualizações do site.
+    (() => {
+      const version = "2026103005";
+      document.querySelectorAll('link[rel="stylesheet"][href^="styles.css"]').forEach(el => el.href = "styles.css?v=" + version);
+      document.querySelectorAll('script[src^="supabase-config.js"], script[src^="app.js"]').forEach(el => {
+        const base = el.src.includes("supabase-config.js") ? "supabase-config.js" : "app.js";
+        el.src = base + "?v=" + version;
+      });
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="supabase-config.js?v=2026103001"></script>
-  <script src="app.js?v=2026103001"></script>
+  <script src="supabase-config.js?v=2026103005"></script>
+  <script src="app.js?v=2026103005"></script>
 </body>
 </html>
