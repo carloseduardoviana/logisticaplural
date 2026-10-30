@@ -3,7 +3,7 @@ window.logiFlowSync = (() => {
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_evbgYU7X1rdKjC3dsiCm5w_hc3mRfzt";
   const TABLE = "shared_state";
   const ROW_ID = "logiflow-main";
-  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { storageKey: "pluralmed-auth-v2", persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
   let saveTimer = null;
   const loginEmail = (loginCode) => `${String(loginCode).trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "")}@logisticaplural.com`;
 
