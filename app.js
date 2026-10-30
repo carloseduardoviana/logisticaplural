@@ -111,6 +111,9 @@ function formatTextMoney(value) {
 }
 
 let autoTextDay = "all";
+let travelCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let travelSelectedDate = new Date().toISOString().slice(0, 10);
+let travelExpandedTripKey = null;
 
 function getCurrentWeekTripsForText() {
   return Object.entries(DAYS).flatMap(([day, dayName], dayIndex) => {
@@ -245,6 +248,7 @@ function render() {
   document.querySelector("#peopleTotal").textContent = people;
   document.querySelector("#costTotal").textContent = money(cost);
   if (!document.querySelector("#dashboardScreen").hidden) renderDashboard();
+  if (!document.querySelector("#travelPanelScreen").hidden) renderTravelPanel();
 
   if (!dayTrips.length) {
     tripList.innerHTML = `<div class="empty-state"><div><svg viewBox="0 0 24 24"><path d="M7 2v2H5a2 2 0 0 0-2 2v14h18V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7Zm12 8H5v8h14v-8Z"/></svg><strong>Nenhuma viagem cadastrada</strong><span>Adicione uma viagem para ${DAYS[selectedDay].toLowerCase()}.</span></div></div>`;
@@ -358,6 +362,90 @@ function renderDashboard() {
     return `<div class="vehicle-bar-row"><div class="vehicle-bar-label"><strong>${escapeHtml(vehicle)}</strong><span>${tripCount} viagem(ns)</span></div><div class="vehicle-bar-track"><div class="vehicle-bar-fill" style="width:${width}"></div></div><div class="vehicle-bar-value">${km.toLocaleString("pt-BR")} km (${tripCount})</div></div>`;
   }).join("") : `<div class="vehicle-bar-row"><div class="vehicle-bar-label"><strong>Sem veículos</strong></div><div class="vehicle-bar-track"></div><div class="vehicle-bar-value">0 km</div></div>`;
   document.querySelector("#dashboardVehicleRows").innerHTML = "";
+}
+
+function getAllTripsForTravelPanel() {
+  const editorMode = currentProfile?.role === "editor";
+  const owner = currentProfile?.display_name || currentProfile?.login_code || "Editor";
+  return Object.entries(DAYS).flatMap(([day, dayName], dayIndex) =>
+    trips[day].filter(trip => trip.weekStart && (!editorMode || trip.submittedBy === owner))
+      .map(trip => ({ ...trip, day, dayName, dayIndex, tripDate: getTripDate(trip, dayIndex), storageIndex: trips[day].indexOf(trip) }))
+  );
+}
+
+function renderTravelPanel() {
+  const monthTitle = document.querySelector("#travelMonthTitle");
+  const grid = document.querySelector("#travelCalendarGrid");
+  if (!monthTitle || !grid) return;
+  monthTitle.textContent = `${monthNames[travelCalendarMonth.getMonth()]} de ${travelCalendarMonth.getFullYear()}`;
+  const allTrips = getAllTripsForTravelPanel();
+  const firstDay = new Date(travelCalendarMonth.getFullYear(), travelCalendarMonth.getMonth(), 1);
+  const startOffset = firstDay.getDay();
+  const daysInMonth = new Date(travelCalendarMonth.getFullYear(), travelCalendarMonth.getMonth() + 1, 0).getDate();
+  const weekLabels = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
+  const cells = weekLabels.map(label => `<div class="travel-weekday">${label}</div>`);
+  for (let i = 0; i < startOffset; i++) cells.push('<div class="travel-day-cell travel-day-blank" aria-hidden="true"></div>');
+  for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+    const date = `${travelCalendarMonth.getFullYear()}-${String(travelCalendarMonth.getMonth()+1).padStart(2,"0")}-${String(dayNum).padStart(2,"0")}`;
+    const dayTrips = allTrips.filter(trip => trip.tripDate === date);
+    const people = dayTrips.reduce((sum, trip) => sum + (trip.collaborators || []).length, 0);
+    const capacity = dayTrips.length ? dayTrips.reduce((sum, trip) => sum + Number(trip.vehicleCapacity || trip.capacity || 0), 0) : 0;
+    const over = dayTrips.some(trip => Number(trip.collaborators?.length || 0) > Number(trip.vehicleCapacity || trip.capacity || 999));
+    const statusClass = !dayTrips.length ? "travel-day-empty" : over ? "travel-day-over" : "travel-day-has-trips";
+    const destinations = dayTrips.slice(0, 3).map(trip => `<div class="travel-mini-trip"><strong>${escapeHtml(trip.municipality || "Destino não informado")}</strong><span>${escapeHtml(trip.departureTime || "--:--")} · ${(trip.collaborators || []).length} pessoa(s)</span></div>`).join("");
+    const extra = dayTrips.length > 3 ? `<small class="travel-more-trips">+${dayTrips.length - 3} viagens</small>` : "";
+    cells.push(`<button type="button" class="travel-day-cell ${statusClass} ${travelSelectedDate === date ? "travel-day-selected" : ""}" data-travel-date="${date}" aria-pressed="${travelSelectedDate === date}">
+      <span class="travel-day-number">${dayNum}</span>
+      ${dayTrips.length ? `<span class="travel-day-count">${dayTrips.length} viagem(ns)</span><div class="travel-day-mini-list">${destinations}${extra}</div><span class="travel-day-footer">${people} colaborador(es)</span>` : '<span class="travel-no-trips">Sem viagens</span>'}
+    </button>`);
+  }
+  grid.innerHTML = cells.join("");
+  grid.querySelectorAll("[data-travel-date]").forEach(button => button.addEventListener("click", () => {
+    travelSelectedDate = button.dataset.travelDate;
+    travelExpandedTripKey = null;
+    renderTravelPanel();
+  }));
+  renderTravelDayDetails(allTrips);
+}
+
+function renderTravelDayDetails(allTrips = getAllTripsForTravelPanel()) {
+  const date = travelSelectedDate;
+  const dateObj = new Date(`${date}T12:00:00`);
+  const dateTrips = allTrips.filter(trip => trip.tripDate === date);
+  document.querySelector("#travelSelectedDate").textContent = dateObj.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+  const people = dateTrips.reduce((sum, trip) => sum + (trip.collaborators || []).length, 0);
+  const cars = new Set(dateTrips.map(trip => trip.vehicle).filter(Boolean)).size;
+  const cost = dateTrips.reduce((sum, trip) => sum + Number(trip.fuelCost || 0) + (trip.collaborators || []).reduce((s, person) => s + Number(person.cost || 0), 0), 0);
+  document.querySelector("#travelDayMetrics").innerHTML = `<div><strong>${people}</strong><span>COLABORADORES</span></div><div><strong>${dateTrips.length}</strong><span>VIAGENS</span></div><div><strong>${cars}</strong><span>VEÍCULOS</span></div><div><strong>${money(cost)}</strong><span>CUSTO ESTIMADO</span></div>`;
+  document.querySelector("#travelDayTripCount").textContent = `${dateTrips.length} ${dateTrips.length === 1 ? "viagem" : "viagens"}`;
+  const container = document.querySelector("#travelDayTrips");
+  if (!dateTrips.length) {
+    container.innerHTML = '<div class="travel-empty-detail"><span>▦</span><strong>Nenhuma viagem neste dia</strong><p>Escolha outra data no calendário para consultar as viagens cadastradas.</p></div>';
+    return;
+  }
+  container.innerHTML = dateTrips.map((trip, i) => {
+    const key = `${trip.day}:${trip.storageIndex}`;
+    const expanded = travelExpandedTripKey === key;
+    const totalHelp = (trip.collaborators || []).reduce((sum, person) => sum + Number(person.cost || 0), 0);
+    const total = Number(trip.fuelCost || 0) + totalHelp;
+    return `<article class="travel-detail-card ${expanded ? "expanded" : ""}">
+      <button type="button" class="travel-trip-summary" data-travel-trip="${key}"><span class="travel-status-dot"></span><span class="travel-trip-main"><strong>${escapeHtml(trip.municipality || "Destino não informado")}</strong><small>${escapeHtml(trip.departureTime || "--:--")}–${escapeHtml(trip.returnTime || "--:--")} · ${escapeHtml(trip.vehicle || "Veículo não informado")}</small></span><span class="travel-trip-count">${(trip.collaborators || []).length} pessoas</span><span class="travel-expand-icon">${expanded ? "−" : "+"}</span></button>
+      ${expanded ? `<div class="travel-trip-expanded">
+        <div class="travel-info-pair"><span>Solicitante</span><strong>${escapeHtml(trip.requester || "Não informado")}</strong></div>
+        <div class="travel-info-pair"><span>Motorista</span><strong>${escapeHtml(trip.driver || "Não informado")}</strong></div>
+        <div class="travel-info-pair"><span>Veículo</span><strong>${escapeHtml(trip.vehicle || "Não informado")}</strong></div>
+        <div class="travel-info-pair"><span>Custeio / setor</span><strong>${escapeHtml(trip.funding || "Não informado")}</strong></div>
+        <div class="travel-info-pair"><span>Horário de saída</span><strong>${escapeHtml(trip.departureTime || "Não informado")}</strong></div>
+        <div class="travel-info-pair"><span>Horário de retorno</span><strong>${escapeHtml(trip.returnTime || "Não informado")}</strong></div>
+        <div class="travel-collaborators"><strong>Colaboradores (${(trip.collaborators || []).length})</strong>${(trip.collaborators || []).length ? `<ul>${trip.collaborators.map(person => `<li><span>${escapeHtml(person.name || "Sem nome")}</span><small>${person.cost ? escapeHtml(person.helpType || "Ajuda de custo") + " · " + money(person.cost) : "Sem ajuda de custo"}</small></li>`).join("")}</ul>` : '<p>Nenhum colaborador informado.</p>'}</div>
+        <div class="travel-cost-summary"><span>Combustível: ${money(trip.fuelCost || 0)}</span><span>Ajuda de custo: ${money(totalHelp)}</span><strong>Total: ${money(total)}</strong></div>
+      </div>` : ""}
+    </article>`;
+  }).join("");
+  container.querySelectorAll("[data-travel-trip]").forEach(button => button.addEventListener("click", () => {
+    travelExpandedTripKey = travelExpandedTripKey === button.dataset.travelTrip ? null : button.dataset.travelTrip;
+    renderTravelDayDetails(allTrips);
+  }));
 }
 
 function renderKmTable() {
@@ -656,6 +744,8 @@ document.querySelectorAll(".nav-item[data-view]").forEach((button) => {
     if (view === "trips") document.querySelector("#editorTripsNav")?.classList.remove("active");
     if (editorView || view === "trips") render();
     document.querySelector("#kmScreen").hidden = view !== "km";
+    document.querySelector("#travelPanelScreen").hidden = view !== "travelPanel";
+    if (view === "travelPanel") renderTravelPanel();
     document.querySelector("#dashboardScreen").hidden = view !== "dashboard";
     document.querySelector("#textScreen").hidden = view !== "text";
     document.querySelector("#settingsScreen").hidden = view !== "settings";
@@ -1077,3 +1167,19 @@ document.querySelector("#settingsNav").addEventListener("click", () => {
 
 renderDriverOptions();
 showLoginOrApp();
+
+document.querySelector("#travelPrevMonth")?.addEventListener("click", () => {
+  travelCalendarMonth = new Date(travelCalendarMonth.getFullYear(), travelCalendarMonth.getMonth() - 1, 1);
+  renderTravelPanel();
+});
+document.querySelector("#travelNextMonth")?.addEventListener("click", () => {
+  travelCalendarMonth = new Date(travelCalendarMonth.getFullYear(), travelCalendarMonth.getMonth() + 1, 1);
+  renderTravelPanel();
+});
+document.querySelector("#travelToday")?.addEventListener("click", () => {
+  const now = new Date();
+  travelCalendarMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  travelSelectedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+  travelExpandedTripKey = null;
+  renderTravelPanel();
+});
