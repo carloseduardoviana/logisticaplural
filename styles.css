@@ -343,3 +343,52 @@ h2 { font-size: 21px; }
   .topbar-logout-button { min-height: 38px; padding: 0 10px; gap: 5px; font-size: 12px; }
   .topbar-logout-button svg { width: 16px; height: 16px; }
 }
+
+
+/* Botão de inclusão de colaborador nos cartões de viagem */
+.add-trip-collaborator-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 12px;
+  padding: 9px 13px;
+  border: 1px dashed #8acdc4;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f0fbf9 0%, #e7f7f4 100%);
+  color: #08717c;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .1px;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.add-trip-collaborator-button:hover {
+  border-color: #079b9e;
+  border-style: solid;
+  background: #dff5f1;
+  color: #075d6b;
+  box-shadow: 0 4px 12px rgba(7, 113, 124, .10);
+  transform: translateY(-1px);
+}
+.add-trip-collaborator-button:active { transform: translateY(0); box-shadow: none; }
+.add-trip-collaborator-button:focus-visible {
+  outline: 3px solid rgba(0, 185, 189, .25);
+  outline-offset: 3px;
+}
+.add-trip-collaborator-button::before {
+  content: "+";
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: #08717c;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1;
+}
