@@ -1183,3 +1183,40 @@ document.querySelector("#travelToday")?.addEventListener("click", () => {
   travelExpandedTripKey = null;
   renderTravelPanel();
 });
+
+function exportTravelPanelPdf() {
+  const allTrips = getAllTripsForTravelPanel();
+  const year = travelCalendarMonth.getFullYear();
+  const month = travelCalendarMonth.getMonth();
+  const monthTrips = allTrips.filter(trip => {
+    const d = new Date(`${trip.tripDate}T12:00:00`);
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+  const dateLabel = new Date(year, month, 1).toLocaleDateString("pt-BR", {month:"long", year:"numeric"});
+  const fmtDate = value => value ? new Date(`${value}T12:00:00`).toLocaleDateString("pt-BR") : "Data não informada";
+  const esc = value => escapeHtml(String(value ?? "Não informado"));
+  const monthPeople = monthTrips.reduce((n,t)=>n+(t.collaborators||[]).length,0);
+  const monthVehicles = new Set(monthTrips.map(t=>t.vehicle).filter(Boolean)).size;
+  const monthCost = monthTrips.reduce((sum,t)=>sum+Number(t.fuelCost||0)+(t.collaborators||[]).reduce((s,p)=>s+Number(p.cost||0),0),0);
+  const days = {};
+  monthTrips.forEach(t => (days[t.tripDate] ||= []).push(t));
+  const sortedDays = Object.keys(days).sort();
+  const summaryRows = sortedDays.map(date => {
+    const dayTrips = days[date];
+    return `<tr><td>${fmtDate(date)}</td><td>${dayTrips.map(t=>esc(t.municipality||"Destino não informado")).join("<br>")}</td><td>${dayTrips.length}</td><td>${dayTrips.reduce((n,t)=>n+(t.collaborators||[]).length,0)}</td><td>${dayTrips.map(t=>esc(t.vehicle||"—")).join("<br>")}</td></tr>`;
+  }).join("");
+  const detailedDays = sortedDays.map(date => `<section class="day-section"><h2>${fmtDate(date)}</h2>${days[date].map((t,i)=>{
+    const collabs=t.collaborators||[];
+    const help=collabs.reduce((n,p)=>n+Number(p.cost||0),0);
+    const fuel=Number(t.fuelCost||0);
+    return `<article class="trip"><h3>${esc(t.municipality||"Destino não informado")} <span>${esc(t.departureTime||"--:--")}–${esc(t.returnTime||"--:--")}</span></h3><div class="facts"><p><b>Solicitante</b>${esc(t.requester)}</p><p><b>Motorista</b>${esc(t.driver)}</p><p><b>Veículo</b>${esc(t.vehicle)}</p><p><b>Setor / custeio</b>${esc(t.funding)}</p></div><p class="collab-title">Colaboradores (${collabs.length})</p>${collabs.length ? `<ul>${collabs.map(p=>`<li>${esc(p.name)} — ${esc(p.helpType||"Sem ajuda de custo")}${Number(p.cost||0)>0 ? " · "+money(p.cost):""}</li>`).join("")}</ul>`:"<p>Nenhum colaborador informado.</p>"}<p class="cost">Combustível: ${money(fuel)} · Ajuda de custo: ${money(help)} · <b>Total estimado: ${money(fuel+help)}</b></p></article>`;
+  }).join("")}</section>`).join("");
+  const win = window.open("", "_blank");
+  if (!win) { alert("O navegador bloqueou a janela do PDF. Permita pop-ups para este site e tente novamente."); return; }
+  win.document.open();
+  win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Painel de Viagens — ${esc(dateLabel)}</title><style>
+  @page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font:11px Arial,sans-serif;color:#24363b;margin:0}header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #075d66;padding:0 0 12px;margin-bottom:14px}header h1{margin:0 0 4px;font-size:24px;color:#075d66}header p{margin:0;color:#718187}header .stamp{text-align:right;font-size:10px;line-height:1.6}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0 20px}.metric{border:1px solid #dce8e8;border-radius:8px;padding:11px}.metric b{display:block;color:#087b87;font-size:20px;margin-bottom:4px}.metric span{font-size:9px;color:#708086;text-transform:uppercase;letter-spacing:.4px}.section-title{font-size:16px;color:#075d66;margin:18px 0 8px}table{width:100%;border-collapse:collapse;font-size:10px}th{background:#075d66;color:#fff;text-align:left;padding:8px}td{padding:7px;border:1px solid #e0e8e8;vertical-align:top}tbody tr:nth-child(even){background:#f4f9f8}.day-section{break-before:page}.day-section:first-of-type{break-before:auto}.day-section>h2{font-size:18px;color:#075d66;border-bottom:1px solid #cbdede;padding-bottom:6px}.trip{border:1px solid #dce6e6;border-radius:8px;padding:10px 12px;margin:9px 0;break-inside:avoid}.trip h3{display:flex;justify-content:space-between;gap:12px;color:#075d66;margin:0 0 9px;font-size:14px}.trip h3 span{font-size:11px;color:#64777d}.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.facts p{margin:0;background:#f5f8f8;padding:7px;border-radius:4px}.facts b{display:block;font-size:9px;color:#75868b;margin-bottom:3px}.collab-title{font-weight:bold;margin:9px 0 4px}.trip ul{margin:4px 0;padding-left:18px;columns:2}.trip li{margin:3px 0}.cost{background:#eaf6f2;padding:7px;border-radius:4px;color:#176a55;margin:9px 0 0}.empty{padding:20px;border:1px dashed #cbdada;color:#6b7c81;text-align:center}footer{margin-top:18px;border-top:1px solid #dbe5e5;padding-top:7px;color:#879398;font-size:9px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body><header><div><h1>Painél de Viagens</h1><p>Relatório mensal · ${esc(dateLabel)}</p></div><div class="stamp">Sistema de Logística — Pluralmed<br>Gerado em ${new Date().toLocaleString("pt-BR")}</div></header><div class="metrics"><div class="metric"><b>${monthTrips.length}</b><span>Viagens no mês</span></div><div class="metric"><b>${monthPeople}</b><span>Participações de colaboradores</span></div><div class="metric"><b>${monthVehicles}</b><span>Veículos utilizados</span></div><div class="metric"><b>${money(monthCost)}</b><span>Custo estimado informado</span></div></div><h2 class="section-title">Resumo mensal</h2>${summaryRows ? `<table><thead><tr><th>Data</th><th>Destino(s)</th><th>Viagens</th><th>Colaboradores</th><th>Veículo(s)</th></tr></thead><tbody>${summaryRows}</tbody></table>` : '<div class="empty">Nenhuma viagem cadastrada neste mês.</div>'}<h2 class="section-title">Detalhamento das viagens</h2>${detailedDays || '<div class="empty">Não há detalhes para exibir.</div>'}<footer>Relatório gerado a partir dos dados registrados no sistema. Valores não informados são apresentados como não informados; o custo é uma estimativa baseada nos campos cadastrados.</footer><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`);
+  win.document.close();
+}
+document.querySelector("#travelExportPdf")?.addEventListener("click", exportTravelPanelPdf);
