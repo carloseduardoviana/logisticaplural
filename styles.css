@@ -316,3 +316,30 @@ h2 { font-size: 21px; }
 .trip-modal.editor-request-mode .collaborator-row .collaborator-help { display:none!important; }
 .trip-modal.editor-request-mode .trip-form-section:has(#collaboratorRows) .add-collaborator-button { display:flex; align-items:center; width:100%; }
 .trip-modal.editor-request-mode .trip-form-footer { position:sticky; bottom:0; z-index:3; background:#f7fafc; padding:14px 0 4px; border-top:1px solid #e2ebee; }
+
+
+/* Botão de saída disponível no canto superior direito de cada tela. */
+.topbar-logout-button {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: #58656d;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.topbar-logout-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.topbar-logout-button:hover { color: #b42318; border-color: #e7b9b5; background: #fffafa; }
+@media (max-width: 680px) {
+  .topbar-logout-button { min-height: 38px; padding: 0 10px; gap: 5px; font-size: 12px; }
+  .topbar-logout-button svg { width: 16px; height: 16px; }
+}
