@@ -973,25 +973,60 @@ function startAuthCooldown(seconds=300) {
 }
 const savedCooldown=Number(localStorage.getItem("logiflow-auth-cooldown")||0);
 if(savedCooldown>Date.now())startAuthCooldown(Math.ceil((savedCooldown-Date.now())/1000));
-document.querySelector("#loginForm").addEventListener("submit",async(event)=>{
- event.preventDefault();const errorElement=document.querySelector("#loginError"),submitButton=document.querySelector("#loginSubmit");errorElement.hidden=true;submitButton.disabled=true;
- try{
-  if(!document.querySelector("#bootstrapFields").hidden){
-   const token=document.querySelector("#bootstrapToken").value.trim(),displayName=document.querySelector("#bootstrapName").value.trim(),loginCode=document.querySelector("#bootstrapCode").value.trim(),password=document.querySelector("#bootstrapPassword").value,confirmation=document.querySelector("#bootstrapPasswordConfirmation").value;
-   if(!token||!displayName||!loginCode)throw new Error("Preencha o código de configuração, nome e login.");
-   if(password.length<12)throw new Error("Use uma senha com pelo menos 12 caracteres.");
-   if(password!==confirmation)throw new Error("As senhas não coincidem.");
-   const created=await window.logiFlowSync.bootstrapAdmin(token,displayName,loginCode,password);if(created.error)throw created.error;
-   const loginResult=await window.logiFlowSync.login(loginCode,password);if(loginResult.error||!loginResult.data?.session)throw new Error("Administrador criado. Entre com o login e a senha definidos.");
-   currentProfile=await window.logiFlowSync.getCurrentProfile();if(!currentProfile||currentProfile.role!=="admin")throw new Error("Não foi possível confirmar o perfil administrador.");
-   document.querySelector("#loginOverlay").hidden=true;applyCurrentProfile();await initializeSharedState();return;
+document.querySelector("#loginForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  const form = event.currentTarget;
+  const errorElement = document.querySelector("#loginError");
+  const submitButton = document.querySelector("#loginSubmit");
+  errorElement.hidden = true;
+  submitButton.disabled = true;
+  try {
+    if (!document.querySelector("#bootstrapFields").hidden) {
+      const token = document.querySelector("#bootstrapToken").value.trim();
+      const displayName = document.querySelector("#bootstrapName").value.trim();
+      const loginCode = document.querySelector("#bootstrapCode").value.trim();
+      const password = document.querySelector("#bootstrapPassword").value;
+      const confirmation = document.querySelector("#bootstrapPasswordConfirmation").value;
+      if (!token || !displayName || !loginCode) throw new Error("Preencha o código de configuração, nome e login.");
+      if (password.length < 12) throw new Error("Use uma senha com pelo menos 12 caracteres.");
+      if (password !== confirmation) throw new Error("As senhas não coincidem.");
+      const created = await window.logiFlowSync.bootstrapAdmin(token, displayName, loginCode, password);
+      if (created.error) throw created.error;
+      const loginResult = await window.logiFlowSync.login(loginCode, password);
+      if (loginResult.error || !loginResult.data?.session) throw new Error("Administrador criado. Entre com o login e a senha definidos.");
+    } else {
+      const loginCode = document.querySelector("#loginCode").value.trim();
+      const password = document.querySelector("#loginPassword").value;
+      if (!loginCode || !password) throw new Error("Informe seu código de login e sua senha.");
+      const result = await window.logiFlowSync.login(loginCode, password);
+      if (result.error || !result.data?.session) throw (result.error || new Error("Código ou senha inválidos."));
+    }
+    currentProfile = await window.logiFlowSync.getCurrentProfile();
+    if (!currentProfile || currentProfile.active === false) {
+      await window.logiFlowSync.logout();
+      throw new Error("A autenticação foi aceita, mas não foi possível validar seu perfil. Peça ao administrador para conferir se a conta está ativa.");
+    }
+    if (document.querySelector("#bootstrapFields").hidden === false && currentProfile.role !== "admin") {
+      await window.logiFlowSync.logout();
+      throw new Error("A conta inicial foi criada, mas não foi possível confirmar o perfil administrador.");
+    }
+    document.querySelector("#loginOverlay").hidden = true;
+    applyCurrentProfile();
+    await initializeSharedState();
+  } catch (error) {
+    console.error("Falha no login Pluralmed:", error);
+    const message = String(error?.message || "");
+    if (message.toLowerCase().includes("rate limit")) {
+      startAuthCooldown();
+    } else {
+      errorElement.textContent = message || "Não foi possível concluir o login. Tente novamente.";
+      errorElement.className = "login-error";
+      errorElement.hidden = false;
+    }
+  } finally {
+    if (Number(localStorage.getItem("logiflow-auth-cooldown") || 0) <= Date.now()) submitButton.disabled = false;
   }
-  const loginCode=document.querySelector("#loginCode").value.trim(),password=document.querySelector("#loginPassword").value;
-  const {data,error}=await window.logiFlowSync.login(loginCode,password);if(error||!data?.session)throw new Error("Código ou senha inválidos.");
-  currentProfile=await window.logiFlowSync.getCurrentProfile();if(!currentProfile||currentProfile.active===false){await window.logiFlowSync.logout();throw new Error("Esta conta está inativa.");}
-  document.querySelector("#loginOverlay").hidden=true;applyCurrentProfile();await initializeSharedState();
- }catch(error){const message=String(error?.message||"");if(message.toLowerCase().includes("rate limit"))startAuthCooldown();else{errorElement.textContent=message||"Não foi possível concluir a operação.";errorElement.className="login-error";errorElement.hidden=false;}}
- finally{if(Number(localStorage.getItem("logiflow-auth-cooldown")||0)<=Date.now())submitButton.disabled=false;}
 });
 async function logoutCurrentProfile() {
   try {
