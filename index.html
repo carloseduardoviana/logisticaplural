@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2026103006" />
+  <link rel="stylesheet" href="styles.css?v=2026103007" />
 </head>
 <body>
   <div class="login-overlay" id="loginOverlay">
@@ -258,25 +258,35 @@
   <script>
     // Evita cache de recursos e atualiza abas abertas quando uma nova versão é publicada.
     (() => {
-      const version = "2026103006";
+      const version = "2026103007";
       document.querySelectorAll('link[rel="stylesheet"][href^="styles.css"]').forEach(el => el.href = "styles.css?v=" + version);
       document.querySelectorAll('script[src^="supabase-config.js"], script[src^="app.js"]').forEach(el => {
         const base = el.src.includes("supabase-config.js") ? "supabase-config.js" : "app.js";
         el.src = base + "?v=" + version;
       });
       let currentVersion = version;
-      setInterval(async () => {
+      let checkingVersion = false;
+      const checkPublishedVersion = async () => {
+        if (checkingVersion) return;
+        checkingVersion = true;
         try {
           const response = await fetch("version.json?ts=" + Date.now(), { cache: "no-store" });
           if (!response.ok) return;
           const data = await response.json();
-          if (data.version && data.version !== currentVersion) window.location.reload();
+          if (data.version && data.version !== currentVersion) {
+            window.location.replace(window.location.pathname + "?v=" + encodeURIComponent(data.version) + window.location.hash);
+            return;
+          }
         } catch (_) { /* mantém o sistema funcionando se a rede oscilar */ }
-      }, 60000);
+        finally { checkingVersion = false; }
+      };
+      setInterval(checkPublishedVersion, 15000);
+      window.addEventListener("focus", checkPublishedVersion);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) checkPublishedVersion(); });
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="supabase-config.js?v=2026103006"></script>
-  <script src="app.js?v=2026103006"></script>
+  <script src="supabase-config.js?v=2026103007"></script>
+  <script src="app.js?v=2026103007"></script>
 </body>
 </html>
