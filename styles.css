@@ -295,3 +295,11 @@ h2 { font-size: 21px; }
 .trip-modal.editor-request-mode .trip-form-section:has(#collaboratorRows){display:none!important}
 .trip-modal .trip-field[hidden],.trip-modal label[hidden]{display:none!important}
 .trip-modal.editor-request-mode .editor-modal-note{margin-bottom:0}
+
+/* Colaboradores no pedido de editor: somente nomes, sem ajuda de custo */
+.trip-modal.editor-request-mode .collaborator-row .cost-toggle,
+.trip-modal.editor-request-mode .collaborator-row .collaborator-help{display:none!important}
+.trip-modal.editor-request-mode .collaborator-row{grid-template-columns:minmax(0,1fr) 36px!important}
+.trip-modal.editor-request-mode #collaboratorRows .name-input{grid-column:1}
+.trip-modal.editor-request-mode .trip-form-section:has(#collaboratorRows){display:block!important}
+.trip-modal.editor-request-mode .trip-form-section:has(#collaboratorRows) .trip-section-heading h3{letter-spacing:.01em}
