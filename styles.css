@@ -294,7 +294,4 @@ h2 { font-size: 21px; }
 /* Solicitação de viagem simplificada: esconder por completo os campos que a administração completará */
 .trip-modal.editor-request-mode .trip-form-section:has(#collaboratorRows){display:none!important}
 .trip-modal .trip-field[hidden],.trip-modal label[hidden]{display:none!important}
-.trip-modal.editor-request-mode .trip-form-section:has(select[name="funding"]){display:none!important}
-.trip-modal.editor-request-mode .trip-form-section:has(select[name="driver"]){display:none!important}
-.trip-modal.editor-request-mode .trip-form-section:has(input[name="fuelCost"]){display:none!important}
 .trip-modal.editor-request-mode .editor-modal-note{margin-bottom:0}
