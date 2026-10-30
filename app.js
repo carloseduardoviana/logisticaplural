@@ -687,6 +687,9 @@ function applyCurrentProfile() {
     .join("")
     .toUpperCase();
   const canManage = currentProfile.role === "admin";
+  // Texto Automático é exclusivo para administradores.
+  const textNav = document.querySelector("#textNav");
+  if (textNav) textNav.hidden = !canManage;
   const canEdit = canManage || currentProfile.role === "editor";
   document.querySelector("#settingsNav").hidden = false;
   document.querySelector("#newAccountPanel").hidden = !canManage;
