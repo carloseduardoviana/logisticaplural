@@ -412,7 +412,15 @@ function openModal(tripIndex = null) {
   const fuelLabel = tripForm.elements.fuelCost?.closest("label");
   [fundingLabel, driverLabel, vehicleLabel, fuelLabel].forEach(label => { if (label) label.hidden = isEditor; });
   const collaboratorSection = document.querySelector("#collaboratorRows")?.closest(".trip-form-section");
-  if (collaboratorSection) collaboratorSection.hidden = isEditor;
+  if (collaboratorSection) collaboratorSection.hidden = false;
+  const collaboratorHeading = collaboratorSection?.querySelector(".trip-section-heading h3");
+  const collaboratorDescription = collaboratorSection?.querySelector(".trip-section-heading p");
+  if (collaboratorHeading) collaboratorHeading.textContent = isEditor ? "Colaboradores" : "Equipe da viagem";
+  if (collaboratorDescription) collaboratorDescription.textContent = isEditor ? "Informe os nomes dos participantes. Não é necessário preencher ajuda de custo." : "Adicione quem participará do deslocamento e, se aplicável, informe ajuda de custo.";
+  const costToggleButtons = document.querySelectorAll(".cost-toggle");
+  costToggleButtons.forEach(button => { button.hidden = isEditor; });
+  document.querySelectorAll(".collaborator-help").forEach(box => { box.hidden = isEditor; });
+
   const progressWrap = document.querySelector(".trip-progress-wrap");
   if (progressWrap) progressWrap.hidden = false;
   const editorNote = document.querySelector("#editorModalNote");
@@ -429,7 +437,7 @@ function openModal(tripIndex = null) {
   renderDriverOptions();
   document.querySelector("#collaboratorRows").innerHTML = "";
   if (tripIndex !== null && trips[selectedDay][tripIndex]?.collaborators?.length) trips[selectedDay][tripIndex].collaborators.forEach(person => addCollaboratorRow(person.name, person.cost, person.helpType));
-  else if (currentProfile?.role !== "editor") addCollaboratorRow();
+  else addCollaboratorRow();
   tripForm.elements.requester.focus();
 }
 function closeModal() { modalBackdrop.hidden = true; }
@@ -547,13 +555,17 @@ tripForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!currentProfile || !["admin", "editor"].includes(currentProfile.role)) return;
   const data = new FormData(tripForm);
+  const isEditorSubmission = currentProfile.role === "editor";
   const collaborators = Array.from(document.querySelectorAll(".collaborator-row")).map((row) => ({
     name: row.querySelector(".name-input").value.trim(),
-    cost: Number(row.querySelector(".cost-input").value || 0),
-    helpType: row.querySelector(".help-type-input")?.value || "Não informado"
+    cost: isEditorSubmission ? 0 : Number(row.querySelector(".cost-input").value || 0),
+    helpType: isEditorSubmission ? "" : (row.querySelector(".help-type-input")?.value || "Não informado")
   })).filter((person) => person.name);
-  const isEditorSubmission = currentProfile.role === "editor";
   if (!collaborators.length && !isEditorSubmission) { /* equipe opcional; admin pode completar depois */ }
+  if (isEditorSubmission) {
+    const missingCollaborator = Array.from(document.querySelectorAll(".collaborator-row")).some(row => !row.querySelector(".name-input").value.trim());
+    if (missingCollaborator) { const input = Array.from(document.querySelectorAll(".collaborator-row")).find(row => !row.querySelector(".name-input").value.trim())?.querySelector(".name-input"); input?.setCustomValidity("Informe o nome do colaborador ou remova a linha."); input?.reportValidity(); input?.addEventListener("input", () => input.setCustomValidity(""), {once:true}); return; }
+  }
   if (!tripForm.reportValidity()) return;
   const departureTime = String(data.get("departureTime") || "").trim();
   const returnTime = String(data.get("returnTime") || "").trim();
