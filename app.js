@@ -401,7 +401,20 @@ function openModal(tripIndex = null) {
   tripForm.reset();
   const isAdmin = currentProfile?.role === "admin";
   const isEditor = currentProfile?.role === "editor";
-  ["funding", "driver", "vehicle", "fuelCost"].forEach((name) => { tripForm.elements[name].required = !isEditor; });
+  const modal = document.querySelector(".trip-modal");
+  modal?.classList.toggle("editor-request-mode", isEditor);
+  ["funding", "driver", "vehicle", "fuelCost"].forEach((name) => {
+    if (tripForm.elements[name]) tripForm.elements[name].required = !isEditor;
+  });
+  const fundingLabel = tripForm.elements.funding?.closest("label");
+  const driverLabel = tripForm.elements.driver?.closest("label");
+  const vehicleLabel = tripForm.elements.vehicle?.closest("label");
+  const fuelLabel = tripForm.elements.fuelCost?.closest("label");
+  [fundingLabel, driverLabel, vehicleLabel, fuelLabel].forEach(label => { if (label) label.hidden = isEditor; });
+  const collaboratorSection = document.querySelector("#collaboratorRows")?.closest(".trip-form-section");
+  if (collaboratorSection) collaboratorSection.hidden = isEditor;
+  const progressWrap = document.querySelector(".trip-progress-wrap");
+  if (progressWrap) progressWrap.hidden = false;
   const editorNote = document.querySelector("#editorModalNote");
   if (editorNote) editorNote.hidden = !isEditor;
   const editorPageNote = document.querySelector("#editorSubmissionNote");
