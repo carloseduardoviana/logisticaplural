@@ -14,21 +14,19 @@
     <form class="login-card" id="loginForm">
       <div class="login-brand"><span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></span><strong>LogiFlow</strong></div>
       <p class="section-kicker">ACESSO AO SISTEMA</p>
-      <div class="login-tabs" role="tablist" aria-label="Opções de acesso">
-        <button class="login-tab active" id="loginTab" type="button" role="tab" aria-selected="true">Entrar</button>
-        <button class="login-tab" id="registerTab" type="button" role="tab" aria-selected="false">Cadastrar</button>
-      </div>
       <div id="loginFields">
         <h1>Entrar na conta</h1>
         <label>Código de login<input id="loginCode" autocomplete="username" required placeholder="Ex: Carlos Eduardo" /></label>
         <label>Senha<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
       </div>
-      <div id="registerFields" hidden>
-        <h1>Criar conta</h1>
-        <label>Nome<input id="registerName" autocomplete="name" placeholder="Nome completo" /></label>
-        <label>Código de login<input id="registerCode" autocomplete="username" placeholder="Ex: Maria Silva" /></label>
-        <label>Senha<input id="registerPassword" type="password" autocomplete="new-password" minlength="8" /></label>
-        <label>Confirmar senha<input id="registerPasswordConfirmation" type="password" autocomplete="new-password" minlength="8" /></label>
+      <div id="bootstrapFields" hidden>
+        <h1>Configuração inicial</h1>
+        <p>Crie a primeira conta administradora. Esta opção será desativada após a configuração inicial.</p>
+        <label>Código de configuração<input id="bootstrapToken" autocomplete="off" /></label>
+        <label>Nome do administrador<input id="bootstrapName" autocomplete="name" placeholder="Nome completo" /></label>
+        <label>Login do administrador<input id="bootstrapCode" autocomplete="username" placeholder="Ex: admin" /></label>
+        <label>Senha do administrador<input id="bootstrapPassword" type="password" autocomplete="new-password" minlength="12" /></label>
+        <label>Confirmar senha<input id="bootstrapPasswordConfirmation" type="password" autocomplete="new-password" minlength="12" /></label>
       </div>
       <p class="login-error" id="loginError" hidden></p>
       <button class="primary-button" id="loginSubmit" type="submit">Entrar</button>
@@ -200,10 +198,9 @@
             <label>Código de login<input name="loginCode" required placeholder="Ex: Maria Silva" /></label>
             <label>Senha temporária<input name="password" type="password" minlength="8" required /></label>
             <label>Cargo<select name="role" required>
-              <option value="adm_geral">Administrador geral</option>
-              <option value="administrador">Administrador</option>
-              <option value="operador">Operador</option>
-              <option value="consulta">Consulta</option>
+              <option value="visualizador">Visualizador</option>
+              <option value="editor">Editor</option>
+              <option value="admin">Administrador</option>
             </select></label>
             <button class="primary-button" type="submit">Criar conta</button>
           </form>
@@ -256,7 +253,7 @@
 
   <div class="toast" id="toast" role="status">Texto copiado</div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="supabase-config.js?v=202610291505"></script>
-  <script src="app.js?v=202610291505"></script>
+  <script src="supabase-config.js?v=2026103001"></script>
+  <script src="app.js?v=2026103001"></script>
 </body>
 </html>
