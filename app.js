@@ -251,16 +251,16 @@ function render() {
   const selectedDayIndex = Object.keys(DAYS).indexOf(selectedDay);
   const selectedDate = formatPeriodDay(selectedDayIndex);
   tripList.innerHTML = dayTrips.map((trip, index) => {
-    const collaborators = trip.collaborators.map((person) => person.cost ? `${person.name} (${person.helpType || "Ajuda"}: ${money(person.cost)})` : person.name).join("; ");
-    const total = Number(trip.fuelCost) + trip.collaborators.reduce((sum, person) => sum + Number(person.cost || 0), 0);
-    return `<article class="trip-card">
-      <div class="trip-icon"><svg viewBox="0 0 24 24"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm11 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></div>
-      <dl><dt>Data da viagem</dt><dd>${escapeHtml(selectedDate)}</dd><dd class="muted">Ida ${escapeHtml(trip.departureTime || "--:--")} · Volta ${escapeHtml(trip.returnTime || "--:--")}</dd></dl>
-      <dl><dt>Solicitante / Município</dt><dd>${escapeHtml(trip.requester)}</dd><dd class="muted">${escapeHtml(trip.municipality || "Não informado")} · ${escapeHtml(trip.vehicle)}</dd><dd class="muted">Motorista: ${escapeHtml(trip.driver || "Não informado")}</dd><dd class="muted">Custeio: ${escapeHtml(trip.funding || "Não informado")}</dd></dl>
-      <dl><dt>Colaboradores · ${trip.collaborators.length}</dt><dd class="muted">${escapeHtml(collaborators)}</dd></dl>
-      <dl class="info-cost"><dt>Custos</dt><dd>${money(total)}</dd><dd class="muted">Gasolina ${money(trip.fuelCost)} · Ajuda de custo ${money(total - Number(trip.fuelCost))}</dd></dl>
-      <button class="delete-button" type="button" data-index="${index}" title="Excluir viagem" aria-label="Excluir viagem"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V3h8v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg></button>
-    </article>`;
+    const totalHelp = trip.collaborators.reduce((sum, person) => sum + Number(person.cost || 0), 0);
+    const total = Number(trip.fuelCost || 0) + totalHelp;
+    return `<article class="trip-card trip-card-detailed">
+      <header class="trip-card-header"><div class="trip-card-title"><span class="trip-number">VIAGEM ${String(index + 1).padStart(2,"0")}</span><h3>${escapeHtml(trip.municipality || "Município não informado")}</h3><p>${escapeHtml(trip.requester || "Solicitante não informado")} · ${escapeHtml(trip.vehicle || "Veículo não informado")}</p></div><div class="trip-card-date"><span>DATA</span><strong>${escapeHtml(selectedDate)}</strong></div><button class="delete-button" type="button" data-index="${index}" title="Excluir viagem" aria-label="Excluir viagem"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V3h8v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg></button></header>
+      <div class="trip-detail-grid">
+        <section class="trip-detail-block"><div class="trip-block-heading"><span class="trip-block-symbol">◷</span><div><span>01 · CRONOGRAMA</span><h4>Horários da viagem</h4></div></div><div class="trip-time-row"><div><small>SAÍDA</small><strong>${escapeHtml(trip.departureTime || "--:--")}</strong></div><span class="trip-time-line">→</span><div><small>RETORNO</small><strong>${escapeHtml(trip.returnTime || "--:--")}</strong></div></div></section>
+        <section class="trip-detail-block"><div class="trip-block-heading"><span class="trip-block-symbol">♙</span><div><span>02 · RESPONSÁVEIS</span><h4>Operação e solicitante</h4></div></div><dl class="trip-facts"><div><dt>Motorista</dt><dd>${escapeHtml(trip.driver || "Não informado")}</dd></div><div><dt>Solicitante</dt><dd>${escapeHtml(trip.requester || "Não informado")}</dd></div><div><dt>Custeio / setor</dt><dd>${escapeHtml(trip.funding || "Não informado")}</dd></div></dl></section>
+        <section class="trip-detail-block"><div class="trip-block-heading"><span class="trip-block-symbol">♧</span><div><span>03 · EQUIPE</span><h4>Colaboradores <b class="trip-count-pill">${trip.collaborators.length}</b></h4></div></div>${trip.collaborators.length ? `<ul class="trip-people-list">${trip.collaborators.map(person => `<li><span>${escapeHtml(person.name)}</span><small>${person.cost ? escapeHtml(person.helpType || "Ajuda de custo") + " · " + money(person.cost) : "Sem ajuda de custo"}</small></li>`).join("")}</ul>` : '<p class="trip-no-data">Nenhum colaborador informado.</p>'}</section>
+        <section class="trip-detail-block trip-cost-block"><div class="trip-block-heading"><span class="trip-block-symbol">R$</span><div><span>04 · FINANCEIRO</span><h4>Resumo de custos</h4></div></div><div class="trip-cost-total"><small>CUSTO TOTAL ESTIMADO</small><strong>${money(total)}</strong></div><div class="trip-cost-lines"><div><span>Combustível</span><strong>${money(trip.fuelCost || 0)}</strong></div><div><span>Ajuda de custo</span><strong>${money(totalHelp)}</strong></div></div></section>
+      </div></article>`;
   }).join("");
 }
 
