@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Símbolo Pluralmed">
+<defs><clipPath id="heart"><path d="M90 164 19 94C-5 70 2 31 27 13 48-2 74 3 90 24 106 3 132-2 153 13c25 18 32 57 8 81Z"/></clipPath></defs>
+<g clip-path="url(#heart)">
+<rect width="180" height="180" fill="#00bdbb"/>
+<path d="M0 0H90L20 94 0 74Z" fill="#0874df"/>
+<path d="M90 0H180V90L90 164 20 94Z" fill="#bde986"/>
+<path d="M20 94 90 24 160 94 90 164Z" fill="#00bdbb"/>
+<path d="M0 0 90 0 20 94 0 74Z" fill="#0874df"/>
+</g></svg>
