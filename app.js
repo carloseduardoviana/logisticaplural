@@ -887,21 +887,30 @@ document.addEventListener("visibilitychange", () => {
 const roleLabels = { admin: "Administrador", editor: "Editor", visualizador: "Visualizador" };
 
 async function showLoginOrApp() {
-  const statusResult = await window.logiFlowSync.getBootstrapStatus();
-  const needsBootstrap = !statusResult.error && statusResult.data?.needsBootstrap === true;
-  document.querySelector("#bootstrapFields").hidden = !needsBootstrap;
-  document.querySelector("#loginFields").hidden = needsBootstrap;
-  document.querySelector("#loginCode").required = !needsBootstrap;
-  document.querySelector("#loginPassword").required = !needsBootstrap;
-  ["#bootstrapToken", "#bootstrapName", "#bootstrapCode", "#bootstrapPassword", "#bootstrapPasswordConfirmation"].forEach((selector) => { document.querySelector(selector).required = needsBootstrap; });
-  document.querySelector("#loginSubmit").textContent = needsBootstrap ? "Criar administrador" : "Entrar";
-  document.querySelector("#loginError").hidden = true;
-  currentProfile = await window.logiFlowSync.getCurrentProfile();
-  if (currentProfile && currentProfile.active !== false) {
-    document.querySelector("#loginOverlay").hidden = true;
-    applyCurrentProfile();
-    await initializeSharedState();
-  } else { document.querySelector("#loginOverlay").hidden = false; }
+  try {
+    const statusResult = await window.logiFlowSync.getBootstrapStatus();
+    const needsBootstrap = !statusResult.error && statusResult.data?.needsBootstrap === true;
+    document.querySelector("#bootstrapFields").hidden = !needsBootstrap;
+    document.querySelector("#loginFields").hidden = needsBootstrap;
+    document.querySelector("#loginCode").required = !needsBootstrap;
+    document.querySelector("#loginPassword").required = !needsBootstrap;
+    ["#bootstrapToken", "#bootstrapName", "#bootstrapCode", "#bootstrapPassword", "#bootstrapPasswordConfirmation"].forEach((selector) => { document.querySelector(selector).required = needsBootstrap; });
+    document.querySelector("#loginSubmit").textContent = needsBootstrap ? "Criar administrador" : "Entrar";
+    document.querySelector("#loginError").hidden = true;
+    currentProfile = await window.logiFlowSync.getCurrentProfile();
+    if (currentProfile && currentProfile.active !== false) {
+      document.querySelector("#loginOverlay").hidden = true;
+      applyCurrentProfile();
+      await initializeSharedState();
+    } else {
+      document.querySelector("#loginOverlay").hidden = false;
+    }
+  } catch (error) {
+    console.error("Não foi possível validar a sessão:", error);
+    document.querySelector("#loginOverlay").hidden = false;
+  } finally {
+    document.body.classList.remove("auth-checking");
+  }
 }
 
 function applyCurrentProfile() {
