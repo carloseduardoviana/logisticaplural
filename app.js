@@ -256,8 +256,9 @@ function render() {
   tripList.innerHTML = dayTrips.map((trip, index) => {
     const totalHelp = trip.collaborators.reduce((sum, person) => sum + Number(person.cost || 0), 0);
     const total = Number(trip.fuelCost || 0) + totalHelp;
-    return `<article class="trip-card trip-card-detailed">
-      <header class="trip-card-header"><div class="trip-card-title"><span class="trip-number">VIAGEM ${String(index + 1).padStart(2,"0")}</span>${trip.status === "pending_admin" ? '<span class="editor-admin-badge" title="Solicitação enviada por editor para revisão administrativa">EDITOR ADM · AGUARDANDO COMPLEMENTO</span>' : ""}<h3>${escapeHtml(trip.municipality || "Município não informado")}</h3><p>${escapeHtml(trip.requester || "Solicitante não informado")} · ${escapeHtml(trip.vehicle || "Veículo não informado")}</p></div><div class="trip-card-date"><span>DATA</span><strong>${escapeHtml(selectedDate)}</strong></div>${currentProfile?.role === "admin" ? `<button class="edit-trip-button" type="button" data-edit-index="${index}" title="Completar ou editar dados da viagem" aria-label="Editar viagem">✎ Completar dados</button>` : ""}<button class="delete-button" type="button" data-index="${index}" title="Excluir viagem" aria-label="Excluir viagem"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V3h8v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg></button></header>
+    const storageIndex = trips[selectedDay].indexOf(trip);
+    return `<article class="trip-card trip-card-detailed ${trip.status === "pending_admin" ? "trip-pending-admin" : ""}">
+      <header class="trip-card-header"><div class="trip-card-title"><span class="trip-number">VIAGEM ${String(index + 1).padStart(2,"0")}</span>${trip.status === "pending_admin" ? '<span class="editor-admin-badge" title="Solicitação enviada por editor para revisão administrativa">EDITOR ADM · AGUARDANDO COMPLEMENTO</span>' : ""}<h3>${escapeHtml(trip.municipality || "Município não informado")}</h3><p>${escapeHtml(trip.requester || "Solicitante não informado")} · ${escapeHtml(trip.vehicle || "Veículo não informado")}</p></div><div class="trip-card-date"><span>DATA</span><strong>${escapeHtml(selectedDate)}</strong></div>${currentProfile?.role === "admin" ? `<button class="edit-trip-button" type="button" data-edit-index="${storageIndex}" title="Completar ou editar dados da viagem" aria-label="Editar viagem">✎ Completar dados</button>` : ""}<button class="delete-button" type="button" data-index="${storageIndex}" title="Excluir viagem" aria-label="Excluir viagem"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V3h8v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg></button></header>
       <div class="trip-detail-grid">
         <section class="trip-detail-block"><div class="trip-block-heading"><span class="trip-block-symbol">◷</span><div><span>01 · CRONOGRAMA</span><h4>Horários da viagem</h4></div></div><div class="trip-time-row"><div><small>SAÍDA</small><strong>${escapeHtml(trip.departureTime || "--:--")}</strong></div><span class="trip-time-line">→</span><div><small>RETORNO</small><strong>${escapeHtml(trip.returnTime || "--:--")}</strong></div></div></section>
         <section class="trip-detail-block"><div class="trip-block-heading"><span class="trip-block-symbol">♙</span><div><span>02 · RESPONSÁVEIS</span><h4>Operação e solicitante</h4></div></div><dl class="trip-facts"><div><dt>Motorista</dt><dd>${escapeHtml(trip.driver || "Não informado")}</dd></div><div><dt>Solicitante</dt><dd>${escapeHtml(trip.requester || "Não informado")}</dd></div><div><dt>Custeio / setor</dt><dd>${escapeHtml(trip.funding || "Não informado")}</dd></div></dl></section>
@@ -540,8 +541,9 @@ tripForm.addEventListener("submit", (event) => {
   })).filter((person) => person.name);
   const isEditorSubmission = currentProfile.role === "editor";
   if (!collaborators.length && !isEditorSubmission) { /* equipe opcional; admin pode completar depois */ }
-  const departureTime = String(data.get("departureTime")).trim();
-  const returnTime = String(data.get("returnTime")).trim();
+  if (!tripForm.reportValidity()) return;
+  const departureTime = String(data.get("departureTime") || "").trim();
+  const returnTime = String(data.get("returnTime") || "").trim();
   if (departureTime && returnTime && returnTime < departureTime) {
     tripForm.elements.returnTime.setCustomValidity("O horário de volta deve ser igual ou posterior ao horário de ida.");
     tripForm.elements.returnTime.reportValidity();
@@ -600,6 +602,7 @@ document.querySelectorAll(".nav-item[data-view]").forEach((button) => {
     document.querySelector("#editorSubmissionNote").hidden = !editorView;
     if (editorView) { document.querySelector("#tripsNav").classList.remove("active"); document.querySelector("#editorTripsNav").classList.add("active"); }
     if (view === "trips") document.querySelector("#editorTripsNav")?.classList.remove("active");
+    if (editorView || view === "trips") render();
     document.querySelector("#kmScreen").hidden = view !== "km";
     document.querySelector("#dashboardScreen").hidden = view !== "dashboard";
     document.querySelector("#textScreen").hidden = view !== "text";
@@ -731,6 +734,15 @@ function applyCurrentProfile() {
   const tripsNav = document.querySelector("#tripsNav");
   if (editorTripsNav) editorTripsNav.hidden = !canEdit || canManage;
   if (tripsNav) { tripsNav.hidden = !canManage; tripsNav.querySelector("span").textContent = "Viagens · ADMIN"; }
+  if (currentProfile.role === "editor") {
+    document.querySelector("#tripsScreen").hidden = false;
+    document.querySelector("#editorTripsNav")?.classList.add("active");
+    document.querySelector("#tripsNav")?.classList.remove("active");
+    document.querySelector("#tripsIntro").hidden = true;
+    document.querySelector("#tripsContentHead").querySelector("h2").textContent = "Minhas solicitações de viagem";
+    document.querySelector("#addTripButton").textContent = "Solicitar viagem";
+    document.querySelector("#editorSubmissionNote").hidden = false;
+  }
   if (editorTripsNav && currentProfile.role === "editor") editorTripsNav.querySelector("span").textContent = "Minhas viagens";
   document.querySelector("#settingsNav").hidden = false;
   document.querySelector("#newAccountPanel").hidden = !canManage;
