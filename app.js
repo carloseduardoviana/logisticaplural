@@ -371,8 +371,8 @@ function renderKmTable() {
         <td><strong>${dayName}</strong><span>${escapeHtml(formatPeriodDay(dayIndex))}</span></td>
         <td><strong>${escapeHtml(trip.municipality || "Não informado")}</strong><span>${escapeHtml(trip.vehicle)} · ${escapeHtml(trip.funding || "Sem custeio")}</span></td>
         <td>${escapeHtml(trip.requester)}</td>
-        <td><input class="km-input" data-day="${day}" data-index="${index}" data-kind="initial" type="number" min="0" step="1" value="${trip.kmInitial ?? ""}" placeholder="0" /></td>
-        <td><input class="km-input" data-day="${day}" data-index="${index}" data-kind="final" type="number" min="0" step="1" value="${trip.kmFinal ?? ""}" placeholder="0" /></td>
+        <td><input class="km-input" data-day="${day}" data-index="${index}" data-kind="initial" type="number" min="0" step="1" value="${trip.kmInitial ?? ""}" placeholder="0" ${currentProfile && ["admin","editor"].includes(currentProfile.role) ? "" : "disabled"} /></td>
+        <td><input class="km-input" data-day="${day}" data-index="${index}" data-kind="final" type="number" min="0" step="1" value="${trip.kmFinal ?? ""}" placeholder="0" ${currentProfile && ["admin","editor"].includes(currentProfile.role) ? "" : "disabled"} /></td>
         <td class="km-distance">${distance.toLocaleString("pt-BR")} km</td>
       </tr>`);
     });
