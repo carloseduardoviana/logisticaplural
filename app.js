@@ -401,8 +401,10 @@ function openModal(tripIndex = null) {
   const isAdmin = currentProfile?.role === "admin";
   const isEditor = currentProfile?.role === "editor";
   ["funding", "driver", "vehicle", "fuelCost"].forEach((name) => { tripForm.elements[name].required = !isEditor; });
-  const editorNote = document.querySelector("#editorSubmissionNote");
+  const editorNote = document.querySelector("#editorModalNote");
   if (editorNote) editorNote.hidden = !isEditor;
+  const editorPageNote = document.querySelector("#editorSubmissionNote");
+  if (editorPageNote) editorPageNote.hidden = currentProfile?.role !== "editor" || document.querySelector("#editorTripsNav")?.classList.contains("active") !== true;
   document.querySelector("#modalTitle").textContent = tripIndex === null ? DAYS[selectedDay] : "Completar dados da viagem";
   if (tripIndex !== null) {
     const trip = trips[selectedDay][tripIndex];
