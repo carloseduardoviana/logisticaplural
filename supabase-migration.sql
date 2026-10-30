@@ -18,4 +18,11 @@ drop policy if exists "Public insert shared state" on public.shared_state; drop 
 create policy "logiflow_authenticated_read" on public.shared_state for select to authenticated using (exists(select 1 from public.profiles p where p.id=auth.uid() and p.active=true));
 create policy "logiflow_editor_insert" on public.shared_state for insert to authenticated with check (public.can_edit_logiflow());
 create policy "logiflow_editor_update" on public.shared_state for update to authenticated using (public.can_edit_logiflow()) with check (public.can_edit_logiflow());
-revoke all on function public.get_login_email(text) from anon; grant execute on function public.get_login_email(text) to authenticated;
+revoke all on function public.can_edit_logiflow() from public, anon;
+grant execute on function public.can_edit_logiflow() to authenticated;
+revoke all on function public.is_logiflow_admin() from public, anon;
+grant execute on function public.is_logiflow_admin() to authenticated;
+revoke all on function public.is_general_admin() from public, anon, authenticated;
+revoke all on function public.handle_new_user() from public, anon, authenticated;
+revoke all on function public.get_login_email(text) from public, authenticated;
+grant execute on function public.get_login_email(text) to anon;
