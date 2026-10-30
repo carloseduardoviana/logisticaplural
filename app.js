@@ -870,11 +870,19 @@ document.querySelector("#loginForm").addEventListener("submit",async(event)=>{
  }catch(error){const message=String(error?.message||"");if(message.toLowerCase().includes("rate limit"))startAuthCooldown();else{errorElement.textContent=message||"Não foi possível concluir a operação.";errorElement.className="login-error";errorElement.hidden=false;}}
  finally{if(Number(localStorage.getItem("logiflow-auth-cooldown")||0)<=Date.now())submitButton.disabled=false;}
 });
-document.querySelector("#logoutButton").addEventListener("click", async () => {
-  await window.logiFlowSync.logout();
-  currentProfile = null;
-  document.querySelector("#loginOverlay").hidden = false;
-  document.querySelector("#loginPassword").value = "";
+async function logoutCurrentProfile() {
+  try {
+    await window.logiFlowSync.logout();
+    currentProfile = null;
+    document.querySelector("#loginOverlay").hidden = false;
+    document.querySelector("#loginPassword").value = "";
+  } catch (error) {
+    console.error("Não foi possível sair da conta:", error);
+  }
+}
+document.querySelector("#logoutButton")?.addEventListener("click", logoutCurrentProfile);
+document.querySelectorAll("[data-logout-button]").forEach((button) => {
+  button.addEventListener("click", logoutCurrentProfile);
 });
 
 document.querySelector("#passwordForm").addEventListener("submit", async (event) => {
