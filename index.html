@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2026103011" />
+  <link rel="stylesheet" href="styles.css?v=2026103012" />
 </head>
 <body>
   <div class="login-overlay" id="loginOverlay">
@@ -227,6 +227,7 @@
         <button class="trip-modal-close" id="closeModalButton" type="button" aria-label="Fechar formulário" title="Fechar sem salvar">×</button>
       </header>
       <div class="trip-progress-wrap"><div class="trip-progress-label"><span>Preenchimento da viagem</span><strong id="tripProgressText">0% concluído</strong></div><div class="trip-progress-track"><span id="tripProgressBar"></span></div><div class="trip-progress-hint" id="tripProgressHint">Comece informando quem solicitou a viagem.</div></div>
+      <div class="editor-modal-note" id="editorModalNote" hidden><strong>EDITOR ADM · Solicitação simplificada</strong><span>Você só precisa informar solicitante, destino e horários. A administração completará custeio, motorista, veículo, equipe e custos.</span></div>
       <form id="tripForm" class="trip-form">
         <section class="trip-form-section"><div class="trip-section-heading"><span class="trip-section-icon">01</span><div><h3>Identificação da viagem</h3><p>Quem solicitou e para onde a equipe vai?</p></div><span class="trip-section-tag">ESSENCIAL</span></div>
           <div class="trip-field-grid">
@@ -272,7 +273,7 @@
   <script>
     // Evita cache de recursos e atualiza abas abertas quando uma nova versão é publicada.
     (() => {
-      const version = "2026103011";
+      const version = "2026103012";
       document.querySelectorAll('link[rel="stylesheet"][href^="styles.css"]').forEach(el => el.href = "styles.css?v=" + version);
       document.querySelectorAll('script[src^="supabase-config.js"], script[src^="app.js"]').forEach(el => {
         const base = el.src.includes("supabase-config.js") ? "supabase-config.js" : "app.js";
@@ -300,7 +301,7 @@
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="supabase-config.js?v=2026103011"></script>
-  <script src="app.js?v=2026103011"></script>
+  <script src="supabase-config.js?v=2026103012"></script>
+  <script src="app.js?v=2026103012"></script>
 </body>
 </html>
