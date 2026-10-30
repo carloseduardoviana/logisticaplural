@@ -708,6 +708,28 @@ tripList.addEventListener("click", (event) => {
 render();
 
 let sharedSubscriptionStarted = false;
+let sharedRefreshInFlight = false;
+let lastSharedStateSignature = "";
+
+function sharedStateSignature(state) {
+  try { return JSON.stringify(state || null); } catch (_) { return ""; }
+}
+
+async function refreshSharedState() {
+  if (!currentProfile || currentProfile.active === false || sharedRefreshInFlight || document.hidden) return;
+  sharedRefreshInFlight = true;
+  try {
+    const remote = await window.logiFlowSync.load();
+    if (remote && typeof remote === "object") {
+      const signature = sharedStateSignature(remote);
+      if (signature && signature !== lastSharedStateSignature) applySharedState(remote);
+    }
+  } catch (error) {
+    console.warn("Sincronização automática temporariamente indisponível:", error.message || error);
+  } finally {
+    sharedRefreshInFlight = false;
+  }
+}
 async function initializeSharedState() {
   if (!currentProfile || currentProfile.active === false) return;
   try {
@@ -720,6 +742,7 @@ async function initializeSharedState() {
 
 function applySharedState(state) {
   if (!state || typeof state !== "object") return;
+  lastSharedStateSignature = sharedStateSignature(state);
   if (state.trips && typeof state.trips === "object") {
     trips = state.trips;
     Object.keys(DAYS).forEach((day) => {
@@ -745,6 +768,14 @@ function applySharedState(state) {
 }
 
 initializeSharedState();
+
+// Revalida o estado compartilhado periodicamente como proteção caso um dispositivo
+// perca uma notificação Realtime ou retorne de uma conexão instável.
+setInterval(refreshSharedState, 15000);
+window.addEventListener("focus", refreshSharedState);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshSharedState();
+});
 
 const roleLabels = { admin: "Administrador", editor: "Editor", visualizador: "Visualizador" };
 
