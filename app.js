@@ -1184,39 +1184,68 @@ document.querySelector("#travelToday")?.addEventListener("click", () => {
   renderTravelPanel();
 });
 
-function exportTravelPanelPdf() {
-  const allTrips = getAllTripsForTravelPanel();
-  const year = travelCalendarMonth.getFullYear();
-  const month = travelCalendarMonth.getMonth();
-  const monthTrips = allTrips.filter(trip => {
-    const d = new Date(`${trip.tripDate}T12:00:00`);
-    return d.getFullYear() === year && d.getMonth() === month;
-  });
-  const dateLabel = new Date(year, month, 1).toLocaleDateString("pt-BR", {month:"long", year:"numeric"});
-  const fmtDate = value => value ? new Date(`${value}T12:00:00`).toLocaleDateString("pt-BR") : "Data não informada";
-  const esc = value => escapeHtml(String(value ?? "Não informado"));
-  const monthPeople = monthTrips.reduce((n,t)=>n+(t.collaborators||[]).length,0);
-  const monthVehicles = new Set(monthTrips.map(t=>t.vehicle).filter(Boolean)).size;
-  const monthCost = monthTrips.reduce((sum,t)=>sum+Number(t.fuelCost||0)+(t.collaborators||[]).reduce((s,p)=>s+Number(p.cost||0),0),0);
-  const days = {};
-  monthTrips.forEach(t => (days[t.tripDate] ||= []).push(t));
-  const sortedDays = Object.keys(days).sort();
-  const summaryRows = sortedDays.map(date => {
-    const dayTrips = days[date];
-    return `<tr><td>${fmtDate(date)}</td><td>${dayTrips.map(t=>esc(t.municipality||"Destino não informado")).join("<br>")}</td><td>${dayTrips.length}</td><td>${dayTrips.reduce((n,t)=>n+(t.collaborators||[]).length,0)}</td><td>${dayTrips.map(t=>esc(t.vehicle||"—")).join("<br>")}</td></tr>`;
-  }).join("");
-  const detailedDays = sortedDays.map(date => `<section class="day-section"><h2>${fmtDate(date)}</h2>${days[date].map((t,i)=>{
-    const collabs=t.collaborators||[];
-    const help=collabs.reduce((n,p)=>n+Number(p.cost||0),0);
-    const fuel=Number(t.fuelCost||0);
-    return `<article class="trip"><h3>${esc(t.municipality||"Destino não informado")} <span>${esc(t.departureTime||"--:--")}–${esc(t.returnTime||"--:--")}</span></h3><div class="facts"><p><b>Solicitante</b>${esc(t.requester)}</p><p><b>Motorista</b>${esc(t.driver)}</p><p><b>Veículo</b>${esc(t.vehicle)}</p><p><b>Setor / custeio</b>${esc(t.funding)}</p></div><p class="collab-title">Colaboradores (${collabs.length})</p>${collabs.length ? `<ul>${collabs.map(p=>`<li>${esc(p.name)} — ${esc(p.helpType||"Sem ajuda de custo")}${Number(p.cost||0)>0 ? " · "+money(p.cost):""}</li>`).join("")}</ul>`:"<p>Nenhum colaborador informado.</p>"}<p class="cost">Combustível: ${money(fuel)} · Ajuda de custo: ${money(help)} · <b>Total estimado: ${money(fuel+help)}</b></p></article>`;
-  }).join("")}</section>`).join("");
-  const win = window.open("", "_blank");
-  if (!win) { alert("O navegador bloqueou a janela do PDF. Permita pop-ups para este site e tente novamente."); return; }
-  win.document.open();
-  win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Painel de Viagens — ${esc(dateLabel)}</title><style>
-  @page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font:11px Arial,sans-serif;color:#24363b;margin:0}header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #075d66;padding:0 0 12px;margin-bottom:14px}header h1{margin:0 0 4px;font-size:24px;color:#075d66}header p{margin:0;color:#718187}header .stamp{text-align:right;font-size:10px;line-height:1.6}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0 20px}.metric{border:1px solid #dce8e8;border-radius:8px;padding:11px}.metric b{display:block;color:#087b87;font-size:20px;margin-bottom:4px}.metric span{font-size:9px;color:#708086;text-transform:uppercase;letter-spacing:.4px}.section-title{font-size:16px;color:#075d66;margin:18px 0 8px}table{width:100%;border-collapse:collapse;font-size:10px}th{background:#075d66;color:#fff;text-align:left;padding:8px}td{padding:7px;border:1px solid #e0e8e8;vertical-align:top}tbody tr:nth-child(even){background:#f4f9f8}.day-section{break-before:page}.day-section:first-of-type{break-before:auto}.day-section>h2{font-size:18px;color:#075d66;border-bottom:1px solid #cbdede;padding-bottom:6px}.trip{border:1px solid #dce6e6;border-radius:8px;padding:10px 12px;margin:9px 0;break-inside:avoid}.trip h3{display:flex;justify-content:space-between;gap:12px;color:#075d66;margin:0 0 9px;font-size:14px}.trip h3 span{font-size:11px;color:#64777d}.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.facts p{margin:0;background:#f5f8f8;padding:7px;border-radius:4px}.facts b{display:block;font-size:9px;color:#75868b;margin-bottom:3px}.collab-title{font-weight:bold;margin:9px 0 4px}.trip ul{margin:4px 0;padding-left:18px;columns:2}.trip li{margin:3px 0}.cost{background:#eaf6f2;padding:7px;border-radius:4px;color:#176a55;margin:9px 0 0}.empty{padding:20px;border:1px dashed #cbdada;color:#6b7c81;text-align:center}footer{margin-top:18px;border-top:1px solid #dbe5e5;padding-top:7px;color:#879398;font-size:9px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-  </style></head><body><header><div><h1>Painél de Viagens</h1><p>Relatório mensal · ${esc(dateLabel)}</p></div><div class="stamp">Sistema de Logística — Pluralmed<br>Gerado em ${new Date().toLocaleString("pt-BR")}</div></header><div class="metrics"><div class="metric"><b>${monthTrips.length}</b><span>Viagens no mês</span></div><div class="metric"><b>${monthPeople}</b><span>Participações de colaboradores</span></div><div class="metric"><b>${monthVehicles}</b><span>Veículos utilizados</span></div><div class="metric"><b>${money(monthCost)}</b><span>Custo estimado informado</span></div></div><h2 class="section-title">Resumo mensal</h2>${summaryRows ? `<table><thead><tr><th>Data</th><th>Destino(s)</th><th>Viagens</th><th>Colaboradores</th><th>Veículo(s)</th></tr></thead><tbody>${summaryRows}</tbody></table>` : '<div class="empty">Nenhuma viagem cadastrada neste mês.</div>'}<h2 class="section-title">Detalhamento das viagens</h2>${detailedDays || '<div class="empty">Não há detalhes para exibir.</div>'}<footer>Relatório gerado a partir dos dados registrados no sistema. Valores não informados são apresentados como não informados; o custo é uma estimativa baseada nos campos cadastrados.</footer><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`);
-  win.document.close();
+async function exportTravelPanelPdf() {
+  const button = document.querySelector("#travelExportPdf");
+  const oldLabel = button?.innerHTML;
+  if (button) { button.disabled = true; button.textContent = "Preparando PDF…"; }
+  try {
+    if (!window.jspdf?.jsPDF) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+    const PDF = window.jspdf.jsPDF;
+    const year = travelCalendarMonth.getFullYear(), month = travelCalendarMonth.getMonth();
+    const trips = getAllTripsForTravelPanel().filter(t => {
+      const d = new Date(t.tripDate + "T12:00:00");
+      return d.getFullYear() === year && d.getMonth() === month;
+    }).sort((a,b) => a.tripDate.localeCompare(b.tripDate));
+    const titleMonth = new Date(year,month,1).toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
+    const people = trips.reduce((n,t)=>n+(t.collaborators||[]).length,0);
+    const destinations = new Set(trips.map(t=>t.municipality).filter(Boolean)).size;
+    const vehicles = new Set(trips.map(t=>t.vehicle).filter(Boolean)).size;
+    const costs = trips.reduce((s,t)=>s+Number(t.fuelCost||0)+(t.collaborators||[]).reduce((n,p)=>n+Number(p.cost||0),0),0);
+    const pdf = new PDF({orientation:"landscape",unit:"mm",format:"a4"});
+    const W=297, H=210, m=12, teal=[7,93,102], ink=[39,55,60], muted=[105,123,129], line=[220,231,231];
+    const cash=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+    pdf.setFillColor(...teal); pdf.roundedRect(m,m,W-2*m,27,3,3,"F");
+    pdf.setTextColor(255,255,255); pdf.setFont("helvetica","bold"); pdf.setFontSize(19); pdf.text("PAINEL DE VIAGENS",m+7,m+11);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(10); pdf.text("Resumo mensal · "+titleMonth,m+7,m+19);
+    pdf.setFontSize(8); pdf.text("SISTEMA DE LOGÍSTICA — PLURALMED",W-m-7,m+11,{align:"right"});
+    pdf.text("Gerado em "+new Date().toLocaleDateString("pt-BR"),W-m-7,m+19,{align:"right"});
+    const cards=[["VIAGENS",trips.length],["COLABORADORES",people],["DESTINOS",destinations],["CUSTO ESTIMADO",cash(costs)]];
+    const cardY=m+33, gap=5, cardW=(W-2*m-3*gap)/4;
+    cards.forEach((c,i)=>{const x=m+i*(cardW+gap);pdf.setFillColor(241,248,248);pdf.setDrawColor(...line);pdf.roundedRect(x,cardY,cardW,21,2,2,"FD");pdf.setTextColor(...teal);pdf.setFont("helvetica","bold");pdf.setFontSize(15);pdf.text(String(c[1]),x+5,cardY+9);pdf.setTextColor(...muted);pdf.setFontSize(7);pdf.text(c[0],x+5,cardY+16);});
+    const tableY=cardY+29;
+    pdf.setTextColor(...teal);pdf.setFont("helvetica","bold");pdf.setFontSize(10);pdf.text("RESUMO DAS VIAGENS POR DIA",m,tableY);
+    const cols=[["DATA",m,22],["DESTINO(S)",m+22,67],["VIAGENS",m+89,20],["COLAB.",m+109,23],["VEÍCULO(S)",m+132,49],["HORÁRIOS",m+181,35],["CUSTO EST.",m+216,57]];
+    const hy=tableY+5, rh=8;
+    pdf.setFillColor(...teal);pdf.rect(m,hy,W-2*m,8,"F");pdf.setFont("helvetica","bold");pdf.setFontSize(7);pdf.setTextColor(255,255,255);
+    cols.forEach(c=>pdf.text(c[0],c[1]+2,hy+5.2));
+    const groups={}; trips.forEach(t=>(groups[t.tripDate] ||= []).push(t));
+    const rows=Object.keys(groups).sort().map(date=>{
+      const g=groups[date], destinations=[...new Set(g.map(t=>t.municipality||"Não informado"))].join(", ");
+      const cars=[...new Set(g.map(t=>t.vehicle).filter(Boolean))].join(", ")||"Não informado";
+      const times=[...new Set(g.map(t=>(t.departureTime||"--:--")+"-"+(t.returnTime||"--:--")))].join(", ");
+      const amount=g.reduce((s,t)=>s+Number(t.fuelCost||0)+(t.collaborators||[]).reduce((n,p)=>n+Number(p.cost||0),0),0);
+      return [new Date(date+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}),destinations,String(g.length),String(g.reduce((n,t)=>n+(t.collaborators||[]).length,0)),cars,times,cash(amount)];
+    });
+    const maxRows=Math.max(1,Math.floor((H-m-12-(hy+8))/rh));
+    rows.slice(0,maxRows).forEach((row,i)=>{const y=hy+8+i*rh;if(i%2===0){pdf.setFillColor(247,250,250);pdf.rect(m,y,W-2*m,rh,"F");}pdf.setDrawColor(...line);pdf.line(m,y+rh,W-m,y+rh);cols.forEach((c,j)=>{let v=row[j];const max=Math.max(5,Math.floor(c[2]*1.5));if(v.length>max)v=v.slice(0,max-1)+"…";pdf.setFont("helvetica",j===0?"bold":"normal");pdf.setFontSize(7);pdf.setTextColor(...(j===0?teal:ink));pdf.text(v,c[1]+2,y+5.2);});});
+    if(!rows.length){pdf.setFont("helvetica","normal");pdf.setFontSize(9);pdf.setTextColor(...muted);pdf.text("Nenhuma viagem cadastrada neste mês.",m+3,hy+16);}
+    pdf.setDrawColor(...line);pdf.line(m,H-12,W-m,H-12);pdf.setFont("helvetica","normal");pdf.setFontSize(7);pdf.setTextColor(...muted);
+    const note=rows.length>maxRows?"Resumo limitado às datas que cabem nesta página para manter o PDF em uma única folha.":"Resumo mensal em uma única folha. Valores dependem dos dados registrados no sistema.";
+    pdf.text(note,m,H-7);pdf.text("Veículos distintos: "+vehicles,W-m,H-7,{align:"right"});
+    pdf.save("painel-viagens-"+year+"-"+String(month+1).padStart(2,"0")+".pdf");
+  } catch (error) {
+    console.error(error);
+    alert("Não foi possível gerar o PDF. Verifique sua conexão com a internet e tente novamente.");
+  } finally {
+    if(button){button.disabled=false;button.innerHTML=oldLabel||"Gerar PDF";}
+  }
 }
 document.querySelector("#travelExportPdf")?.addEventListener("click", exportTravelPanelPdf);
