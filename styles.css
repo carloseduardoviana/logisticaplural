@@ -474,3 +474,10 @@ h2 { font-size: 21px; }
 @media (max-width: 1250px) { .travel-panel { grid-template-columns:minmax(0,1fr) 330px; } .travel-day-cell { min-height:110px; padding:7px 5px; } .travel-mini-trip strong { font-size:9px; } }
 @media (max-width: 950px) { .travel-panel { grid-template-columns:1fr; } .travel-day-panel { position:static; } .travel-day-trips { max-height:none; } .travel-day-cell { min-height:95px; } }
 @media (max-width: 600px) { .travel-calendar-area { padding:10px; } .travel-panel-heading { align-items:flex-start; flex-direction:column; } .travel-month-controls { align-self:flex-end; } .travel-day-cell { min-height:75px; padding:5px 3px; } .travel-day-count { font-size:8px; } .travel-mini-trip { display:none; } .travel-day-footer { font-size:8px; } .travel-no-trips { font-size:8px; } .travel-calendar-legend { gap:8px; font-size:9px; } }
+
+.travel-panel-toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.travel-export-pdf { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:38px; padding:0 13px; border:1px solid #08747c; border-radius:9px; color:#fff; background:linear-gradient(135deg,#08747c,#07565f); box-shadow:0 3px 9px rgba(7,93,102,.16); font-size:12px; font-weight:800; cursor:pointer; transition:transform .15s,box-shadow .15s,background .15s; white-space:nowrap; }
+.travel-export-pdf svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.travel-export-pdf:hover { transform:translateY(-1px); box-shadow:0 6px 14px rgba(7,93,102,.23); background:#06464e; }
+.travel-export-pdf:focus-visible { outline:3px solid #7bc7dc; outline-offset:3px; }
+@media(max-width:600px){.travel-panel-toolbar{width:100%;justify-content:space-between}.travel-export-pdf{flex:1}.travel-month-controls{align-self:auto}}
