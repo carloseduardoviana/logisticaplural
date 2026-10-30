@@ -262,7 +262,7 @@ function render() {
       <div class="trip-detail-grid">
         <section class="trip-detail-block"><div class="trip-block-heading"><span class="trip-block-symbol">◷</span><div><span>01 · CRONOGRAMA</span><h4>Horários da viagem</h4></div></div><div class="trip-time-row"><div><small>SAÍDA</small><strong>${escapeHtml(trip.departureTime || "--:--")}</strong></div><span class="trip-time-line">→</span><div><small>RETORNO</small><strong>${escapeHtml(trip.returnTime || "--:--")}</strong></div></div></section>
         <section class="trip-detail-block"><div class="trip-block-heading"><span class="trip-block-symbol">♙</span><div><span>02 · RESPONSÁVEIS</span><h4>Operação e solicitante</h4></div></div><dl class="trip-facts"><div><dt>Motorista</dt><dd>${escapeHtml(trip.driver || "Não informado")}</dd></div><div><dt>Solicitante</dt><dd>${escapeHtml(trip.requester || "Não informado")}</dd></div><div><dt>Custeio / setor</dt><dd>${escapeHtml(trip.funding || "Não informado")}</dd></div></dl></section>
-        <section class="trip-detail-block"><div class="trip-block-heading"><span class="trip-block-symbol">♧</span><div><span>03 · EQUIPE</span><h4>Colaboradores <b class="trip-count-pill">${trip.collaborators.length}</b></h4></div></div>${trip.collaborators.length ? `<ul class="trip-people-list">${trip.collaborators.map(person => `<li><span>${escapeHtml(person.name)}</span><small>${person.cost ? escapeHtml(person.helpType || "Ajuda de custo") + " · " + money(person.cost) : "Sem ajuda de custo"}</small></li>`).join("")}</ul>` : '<p class="trip-no-data">Nenhum colaborador informado.</p>'}</section>
+        <section class="trip-detail-block"><div class="trip-block-heading"><span class="trip-block-symbol">♧</span><div><span>03 · EQUIPE</span><h4>Colaboradores <b class="trip-count-pill">${trip.collaborators.length}</b></h4></div></div>${trip.collaborators.length ? `<ul class="trip-people-list">${trip.collaborators.map(person => `<li><span>${escapeHtml(person.name)}</span><small>${person.cost ? escapeHtml(person.helpType || "Ajuda de custo") + " · " + money(person.cost) : "Sem ajuda de custo"}</small></li>`).join("")}</ul>` : '<p class="trip-no-data">Nenhum colaborador informado.</p>'}${currentProfile?.role === "editor" ? `<button class="add-trip-collaborator-button" type="button" data-add-collaborator-index="${storageIndex}">＋ Incluir colaborador</button>` : ""}</section>
         <section class="trip-detail-block trip-cost-block"><div class="trip-block-heading"><span class="trip-block-symbol">R$</span><div><span>04 · FINANCEIRO</span><h4>Resumo de custos</h4></div></div><div class="trip-cost-total"><small>CUSTO TOTAL ESTIMADO</small><strong>${money(total)}</strong></div><div class="trip-cost-lines"><div><span>Combustível</span><strong>${money(trip.fuelCost || 0)}</strong></div><div><span>Ajuda de custo</span><strong>${money(totalHelp)}</strong></div></div></section>
       </div></article>`;
   }).join("");
@@ -696,6 +696,23 @@ document.querySelector("#kmTableBody").addEventListener("input", (event) => {
 });
 
 tripList.addEventListener("click", (event) => {
+  const addCollaboratorButton = event.target.closest(".add-trip-collaborator-button");
+  if (addCollaboratorButton && currentProfile?.role === "editor") {
+    const tripIndex = Number(addCollaboratorButton.dataset.addCollaboratorIndex);
+    const trip = trips[selectedDay]?.[tripIndex];
+    if (!trip || trip.submittedBy !== (currentProfile.display_name || currentProfile.login_code || "Editor")) return;
+    const name = window.prompt("Digite o nome do colaborador que deseja incluir nesta viagem:");
+    if (name === null) return;
+    const cleanName = name.trim();
+    if (!cleanName) { window.alert("Informe o nome do colaborador."); return; }
+    const duplicate = (trip.collaborators || []).some(person => String(person.name || "").trim().toLocaleLowerCase("pt-BR") === cleanName.toLocaleLowerCase("pt-BR"));
+    if (duplicate) { window.alert("Esse colaborador já está incluído nesta viagem."); return; }
+    if (!Array.isArray(trip.collaborators)) trip.collaborators = [];
+    trip.collaborators.push({ name: cleanName, cost: 0, helpType: "Não informado" });
+    save();
+    render();
+    return;
+  }
   const editButton = event.target.closest(".edit-trip-button");
   if (editButton && currentProfile?.role === "admin") { openModal(Number(editButton.dataset.editIndex)); return; }
   const button = event.target.closest(".delete-button");
