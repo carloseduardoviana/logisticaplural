@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2026103021" />
+  <link rel="stylesheet" href="styles.css?v=2026103022" />
 </head>
 <body>
   <div class="login-overlay" id="loginOverlay">
@@ -63,6 +63,8 @@
         <h1>Viagens da semana</h1>
       </div>
       <button class="icon-button" id="copySummaryButton" type="button" title="Copiar resumo da semana" aria-label="Copiar resumo da semana"><svg viewBox="0 0 24 24"><path d="M8 7V3h13v13h-4M3 8h13v13H3z"/></svg></button>
+    
+      <button class="topbar-logout-button" data-logout-button type="button" title="Sair da conta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M8 12h10"/></svg><span>Sair</span></button>
     </header>
 
     <section class="trips-intro" id="tripsIntro"><div class="trips-intro-icon">✦</div><div><strong>Planejamento semanal de viagens</strong><p>Selecione um dia para consultar os deslocamentos. Cada bloco reúne horários, responsáveis, equipe e custos. Use “Adicionar viagem” para registrar uma nova saída.</p></div><div class="trips-intro-legend"><span><i class="legend-dot dot-trip"></i>Operação</span><span><i class="legend-dot dot-cost"></i>Custos</span><span><i class="legend-dot dot-team"></i>Equipe</span></div></section>
@@ -105,6 +107,8 @@
         <p class="eyebrow">CONTROLE OPERACIONAL</p>
         <h1>Registro de KM</h1>
       </div>
+    
+      <button class="topbar-logout-button" data-logout-button type="button" title="Sair da conta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M8 12h10"/></svg><span>Sair</span></button>
     </header>
     <section class="km-content">
       <div class="content-head km-head">
@@ -120,6 +124,8 @@
   <main class="main screen" id="dashboardScreen" hidden>
     <header class="topbar">
       <div><p class="eyebrow">RESUMO OPERACIONAL</p><h1>Dashboard</h1></div>
+    
+      <button class="topbar-logout-button" data-logout-button type="button" title="Sair da conta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M8 12h10"/></svg><span>Sair</span></button>
     </header>
     <section class="dashboard-content">
       <div class="dashboard-range">
@@ -155,6 +161,8 @@
   <main class="main screen" id="textScreen" hidden>
     <header class="topbar">
       <div><p class="eyebrow">COMUNICAÇÃO</p><h1>Texto Automático</h1></div>
+    
+      <button class="topbar-logout-button" data-logout-button type="button" title="Sair da conta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M8 12h10"/></svg><span>Sair</span></button>
     </header>
     <section class="auto-text-content">
       <div class="auto-text-day-filter">
@@ -177,6 +185,8 @@
     <header class="topbar">
       <div><p class="eyebrow">ADMINISTRAÇÃO</p><h1>Configurações</h1></div>
       <button class="outline-button" id="logoutButton" type="button">Sair</button>
+    
+      <button class="topbar-logout-button" data-logout-button type="button" title="Sair da conta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M8 12h10"/></svg><span>Sair</span></button>
     </header>
     <section class="settings-content">
       <div class="settings-grid">
@@ -273,7 +283,7 @@
   <script>
     // Evita cache de recursos e atualiza abas abertas quando uma nova versão é publicada.
     (() => {
-      const version = "2026103021";
+      const version = "2026103022";
       document.querySelectorAll('link[rel="stylesheet"][href^="styles.css"]').forEach(el => el.href = "styles.css?v=" + version);
       document.querySelectorAll('script[src^="supabase-config.js"], script[src^="app.js"]').forEach(el => {
         const base = el.src.includes("supabase-config.js") ? "supabase-config.js" : "app.js";
@@ -301,7 +311,7 @@
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="supabase-config.js?v=2026103021"></script>
-  <script src="app.js?v=2026103021"></script>
+  <script src="supabase-config.js?v=2026103022"></script>
+  <script src="app.js?v=2026103022"></script>
 </body>
 </html>
