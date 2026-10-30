@@ -481,3 +481,5 @@ h2 { font-size: 21px; }
 .travel-export-pdf:hover { transform:translateY(-1px); box-shadow:0 6px 14px rgba(7,93,102,.23); background:#06464e; }
 .travel-export-pdf:focus-visible { outline:3px solid #7bc7dc; outline-offset:3px; }
 @media(max-width:600px){.travel-panel-toolbar{width:100%;justify-content:space-between}.travel-export-pdf{flex:1}.travel-month-controls{align-self:auto}}
+
+.travel-export-pdf:disabled{opacity:.7;cursor:wait;transform:none}
