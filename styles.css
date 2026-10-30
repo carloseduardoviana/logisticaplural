@@ -392,3 +392,85 @@ h2 { font-size: 21px; }
   font-weight: 500;
   line-height: 1;
 }
+
+/* Painel mensal de viagens */
+.travel-panel-screen { max-width: none; }
+.travel-panel { display: grid; grid-template-columns: minmax(0, 1fr) 370px; gap: 18px; align-items: start; }
+.travel-calendar-area, .travel-day-panel { min-width: 0; background: #fff; border: 1px solid #e2e9e9; border-radius: 16px; box-shadow: 0 8px 28px rgba(16, 55, 62, .055); }
+.travel-calendar-area { padding: 22px; }
+.travel-panel-heading { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:18px; }
+.travel-panel-heading h2 { margin:3px 0 5px; font-size:25px; letter-spacing:-.7px; }
+.travel-panel-heading p:not(.section-kicker) { margin:0; color:#7b8b91; font-size:12px; }
+.travel-month-controls { display:flex; gap:6px; align-items:center; }
+.travel-month-controls button { border:1px solid #dce8e8; border-radius:9px; background:#fff; color:#176b74; font-weight:700; min-width:36px; height:36px; }
+.travel-month-controls button:hover { background:#eaf7f6; }
+.travel-month-controls button:nth-child(2) { padding:0 12px; font-size:12px; }
+.travel-calendar-legend { display:flex; flex-wrap:wrap; gap:14px; padding:0 0 15px; color:#78868b; font-size:11px; }
+.travel-calendar-legend span { display:flex; align-items:center; gap:6px; }
+.travel-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.dot-ok { background:#39ad78; } .dot-over { background:#e34f59; } .dot-empty { background:#b9c5c8; }
+.travel-calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); border-top:1px solid #e5ebeb; border-left:1px solid #e5ebeb; }
+.travel-weekday { min-height:32px; display:grid; place-items:center; background:#075d66; color:#fff; font-size:10px; font-weight:800; letter-spacing:.6px; }
+.travel-day-cell { appearance:none; position:relative; display:flex; flex-direction:column; align-items:stretch; text-align:left; min-width:0; min-height:130px; padding:9px 8px 7px; border:0; border-right:1px solid #e5ebeb; border-bottom:1px solid #e5ebeb; background:#fff; color:#24333a; overflow:hidden; transition:background .15s,box-shadow .15s; }
+.travel-day-cell:hover { background:#f3fbfa; }
+.travel-day-blank { background:#f7f9f9; }
+.travel-day-number { color:#667981; font-size:12px; font-weight:800; }
+.travel-day-count { margin-top:5px; color:#17747b; font-size:10px; font-weight:800; }
+.travel-day-mini-list { display:grid; gap:5px; margin-top:7px; }
+.travel-mini-trip { min-width:0; display:grid; gap:2px; border-left:2px solid #36a875; padding-left:5px; }
+.travel-mini-trip strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; }
+.travel-mini-trip span { color:#7b898e; font-size:9px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.travel-day-footer { margin-top:auto; padding-top:7px; color:#72848a; font-size:9px; }
+.travel-no-trips { margin-top:12px; color:#bdc6c8; font-size:10px; }
+.travel-day-has-trips { background:#f7fbf8; }
+.travel-day-over { background:#fff6f6; }
+.travel-day-over .travel-mini-trip { border-left-color:#e44d57; }
+.travel-day-selected { z-index:1; box-shadow:inset 0 0 0 2px #167db1; background:#edf7fc; }
+.travel-day-selected .travel-day-number { color:#126fa4; }
+.travel-more-trips { color:#17747b; font-size:9px; font-weight:700; }
+.travel-day-panel { overflow:hidden; position:sticky; top:18px; }
+.travel-day-panel-head { display:flex; align-items:center; justify-content:space-between; padding:17px 17px 15px; color:#fff; background:linear-gradient(120deg,#075d66,#06434b); }
+.travel-day-panel-head>div { display:flex; gap:10px; align-items:center; min-width:0; }
+.travel-calendar-icon { display:grid; place-items:center; width:35px; height:35px; border-radius:10px; background:rgba(255,255,255,.12); font-size:21px; }
+.travel-day-panel-head .section-kicker { margin:0 0 3px; color:#b7dfe0; font-size:9px; }
+.travel-day-panel-head h2 { margin:0; font-size:14px; text-transform:capitalize; }
+.travel-day-close { color:#9dc7c8; font-size:12px; }
+.travel-day-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); padding:13px; gap:8px; border-bottom:1px solid #e8eeee; }
+.travel-day-metrics>div { display:grid; gap:3px; padding:10px; border:1px solid #e8eeee; border-radius:9px; }
+.travel-day-metrics strong { color:#167bb0; font-size:20px; line-height:1.1; overflow-wrap:anywhere; }
+.travel-day-metrics>div:nth-child(2) strong { color:#263b43; }
+.travel-day-metrics span { color:#8a979b; font-size:9px; font-weight:800; letter-spacing:.35px; }
+.travel-day-list-heading { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:14px 16px 8px; }
+.travel-day-list-heading h3 { margin:0; font-size:13px; }
+.travel-day-list-heading>span { color:#839197; font-size:10px; }
+.travel-day-trips { display:grid; gap:8px; padding:0 13px 13px; max-height:54vh; overflow:auto; }
+.travel-detail-card { border:1px solid #e4ebeb; border-radius:11px; overflow:hidden; }
+.travel-trip-summary { display:flex; align-items:center; gap:8px; width:100%; border:0; background:#fff; padding:11px 9px; text-align:left; }
+.travel-trip-summary:hover { background:#f7fbfb; }
+.travel-status-dot { width:8px; height:8px; border-radius:50%; background:#2ca975; flex:0 0 auto; }
+.travel-trip-main { display:grid; gap:4px; min-width:0; flex:1; }
+.travel-trip-main strong { font-size:11px; overflow-wrap:anywhere; }
+.travel-trip-main small { font-size:9px; color:#859298; }
+.travel-trip-count { white-space:nowrap; color:#6c7b80; font-size:9px; }
+.travel-expand-icon { color:#167b9c; font-weight:800; font-size:16px; }
+.travel-trip-expanded { padding:12px; border-top:1px solid #e7eeee; background:#fbfdfd; }
+.travel-info-pair { display:flex; justify-content:space-between; gap:12px; padding:5px 0; border-bottom:1px solid #eef2f2; font-size:10px; }
+.travel-info-pair span { color:#849196; flex:0 0 42%; }
+.travel-info-pair strong { text-align:right; overflow-wrap:anywhere; }
+.travel-collaborators { margin-top:12px; font-size:11px; }
+.travel-collaborators>strong { display:block; margin-bottom:7px; }
+.travel-collaborators ul { list-style:none; padding:0; margin:0; display:grid; gap:6px; }
+.travel-collaborators li { display:flex; justify-content:space-between; gap:8px; padding:8px; background:#fff; border:1px solid #e7eeee; border-radius:7px; }
+.travel-collaborators li span { font-weight:700; font-size:10px; }
+.travel-collaborators li small { text-align:right; color:#7c8a90; font-size:9px; }
+.travel-collaborators p { color:#89969a; }
+.travel-cost-summary { display:grid; gap:5px; margin-top:12px; padding:10px; border-radius:8px; background:#eaf6f2; color:#54736a; font-size:10px; }
+.travel-cost-summary strong { color:#0d6d52; font-size:12px; }
+.travel-empty-detail { text-align:center; padding:25px 15px; color:#87969b; }
+.travel-empty-detail>span { display:block; font-size:25px; color:#8bb5b7; }
+.travel-empty-detail strong { display:block; margin:8px 0; color:#45565d; font-size:12px; }
+.travel-empty-detail p { font-size:11px; line-height:1.5; }
+.travel-panel-hint { margin:0; padding:12px 15px; background:#f2f8fc; color:#71838d; font-size:10px; line-height:1.5; border-top:1px solid #e4eef4; }
+@media (max-width: 1250px) { .travel-panel { grid-template-columns:minmax(0,1fr) 330px; } .travel-day-cell { min-height:110px; padding:7px 5px; } .travel-mini-trip strong { font-size:9px; } }
+@media (max-width: 950px) { .travel-panel { grid-template-columns:1fr; } .travel-day-panel { position:static; } .travel-day-trips { max-height:none; } .travel-day-cell { min-height:95px; } }
+@media (max-width: 600px) { .travel-calendar-area { padding:10px; } .travel-panel-heading { align-items:flex-start; flex-direction:column; } .travel-month-controls { align-self:flex-end; } .travel-day-cell { min-height:75px; padding:5px 3px; } .travel-day-count { font-size:8px; } .travel-mini-trip { display:none; } .travel-day-footer { font-size:8px; } .travel-no-trips { font-size:8px; } .travel-calendar-legend { gap:8px; font-size:9px; } }
