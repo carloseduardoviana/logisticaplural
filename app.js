@@ -887,5 +887,29 @@ document.querySelector("#settingsNav").addEventListener("click", () => {
   }
 });
 
+
+// Indicador dinâmico de preenchimento no formulário de nova viagem.
+(() => {
+  const form = document.querySelector("#tripForm");
+  if (!form) return;
+  const bar = document.querySelector("#tripProgressBar");
+  const text = document.querySelector("#tripProgressText");
+  const hint = document.querySelector("#tripProgressHint");
+  const fields = () => [...form.querySelectorAll("input[required], select[required], textarea[required]")];
+  const updateProgress = () => {
+    const all = fields();
+    const complete = all.filter((field) => field.value.trim() !== "").length;
+    const percent = all.length ? Math.round(complete / all.length * 100) : 0;
+    if (bar) bar.style.width = percent + "%";
+    if (text) text.textContent = percent + "% concluído";
+    if (hint) hint.textContent = percent === 100 ? "Tudo preenchido! Confira os dados e salve a viagem." : percent >= 65 ? "Quase lá — revise os dados e complete os campos restantes." : percent >= 30 ? "Bom progresso! Continue preenchendo os dados da rota." : "Comece informando quem solicitou a viagem.";
+  };
+  form.addEventListener("input", updateProgress);
+  form.addEventListener("change", updateProgress);
+  document.querySelector("#addCollaboratorButton")?.addEventListener("click", () => setTimeout(updateProgress, 0));
+  document.querySelector("#modalBackdrop")?.addEventListener("click", (event) => { if (event.target.id === "modalBackdrop") return; });
+  updateProgress();
+})();
+
 renderDriverOptions();
 showLoginOrApp();
