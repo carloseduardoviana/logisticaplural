@@ -411,8 +411,35 @@ function openModal(tripIndex = null) {
   const vehicleLabel = tripForm.elements.vehicle?.closest("label");
   const fuelLabel = tripForm.elements.fuelCost?.closest("label");
   [fundingLabel, driverLabel, vehicleLabel, fuelLabel].forEach(label => { if (label) label.hidden = isEditor; });
+  const fuelSection = fuelLabel?.closest(".trip-form-section");
+  if (fuelSection) fuelSection.hidden = isEditor;
+  const transportSection = driverLabel?.closest(".trip-form-section");
+  if (transportSection) {
+    const heading = transportSection.querySelector(".trip-section-heading");
+    const grids = transportSection.querySelectorAll(".trip-field-grid");
+    if (isEditor) {
+      if (heading) heading.hidden = true;
+      grids.forEach(grid => {
+        const visibleFields = Array.from(grid.querySelectorAll("label")).filter(label => !label.hidden);
+        grid.hidden = visibleFields.length === 0;
+      });
+    } else {
+      if (heading) heading.hidden = false;
+      grids.forEach(grid => grid.hidden = false);
+    }
+  }
+  const requesterLabel = tripForm.elements.requester?.closest("label");
+  const requesterText = requesterLabel?.querySelector("span");
+  if (requesterText) requesterText.childNodes[0].textContent = isEditor ? "Solicitador de Viagem " : "Quem solicitou a viagem ";
   const collaboratorSection = document.querySelector("#collaboratorRows")?.closest(".trip-form-section");
   if (collaboratorSection) collaboratorSection.hidden = false;
+  document.querySelectorAll(".trip-form-section").forEach(section => { if (section === collaboratorSection) section.hidden = false; });
+  tripForm.querySelectorAll(".trip-form-section").forEach(section => {
+    if (section !== fuelSection && section !== collaboratorSection) section.hidden = false;
+  });
+  modalBackdrop.scrollTop = 0;
+  if (modal) modal.scrollTop = 0;
+  tripForm.scrollTop = 0;
   const collaboratorHeading = collaboratorSection?.querySelector(".trip-section-heading h3");
   const collaboratorDescription = collaboratorSection?.querySelector(".trip-section-heading p");
   if (collaboratorHeading) collaboratorHeading.textContent = isEditor ? "Colaboradores" : "Equipe da viagem";
