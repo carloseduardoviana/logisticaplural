@@ -781,6 +781,8 @@ function applyCurrentProfile() {
   // Texto Automático é exclusivo para administradores.
   const textNav = document.querySelector("#textNav");
   if (textNav) textNav.hidden = !canManage;
+  const kmNav = document.querySelector('.nav-item[data-view="km"]');
+  if (kmNav) kmNav.hidden = !canManage;
   const canEdit = canManage || currentProfile.role === "editor";
   const editorTripsNav = document.querySelector("#editorTripsNav");
   const tripsNav = document.querySelector("#tripsNav");
