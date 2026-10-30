@@ -68,32 +68,13 @@ window.logiFlowSync = (() => {
   }
 
   async function createAccount(displayName, loginCode, password, role) {
-    const email = loginEmail(loginCode);
-    const { data, error } = await client.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          login_code: loginCode.trim(),
-          display_name: displayName.trim(),
-          role
-        }
-      }
-    });
-    if (!error && data?.session && data?.user) {
-      const { error: profileError } = await client.from("profiles").upsert({
-        id: data.user.id,
-        login_code: loginCode.trim(),
-        display_name: displayName.trim(),
-        auth_email: email,
-        role: "consulta",
-        active: true
-      }, { onConflict: "id" });
-      if (profileError) {
-        return { data, error: profileError };
-      }
-    }
-    return { data, error };
+    return client.functions.invoke("admin-accounts", { body: { action: "create", displayName, loginCode, password, role } });
+  }
+  async function getBootstrapStatus() {
+    return client.functions.invoke("admin-accounts", { body: { action: "bootstrap_status" } });
+  }
+  async function bootstrapAdmin(token, displayName, loginCode, password) {
+    return client.functions.invoke("admin-accounts", { body: { action: "bootstrap", token, displayName, loginCode, password } });
   }
 
   async function getCurrentProfile() {
@@ -106,7 +87,7 @@ window.logiFlowSync = (() => {
       id: user.id,
       login_code: user.user_metadata?.login_code || "",
       display_name: user.user_metadata?.display_name || user.email || "",
-      role: user.user_metadata?.role || "consulta",
+      role: "visualizador",
       active: true
     };
   }
@@ -126,5 +107,5 @@ window.logiFlowSync = (() => {
     return client.auth.onAuthStateChange((_event, session) => callback(session?.user || null));
   }
 
-  return { load, save, subscribe, login, logout, changePassword, createAccount, getCurrentProfile, getAccounts, updateAccount, onAuthChange, client };
+  return { load, save, subscribe, login, logout, changePassword, createAccount, getBootstrapStatus, bootstrapAdmin, getCurrentProfile, getAccounts, updateAccount, onAuthChange, client };
 })();
