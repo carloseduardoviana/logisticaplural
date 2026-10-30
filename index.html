@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2026103009" />
+  <link rel="stylesheet" href="styles.css?v=2026103010" />
 </head>
 <body>
   <div class="login-overlay" id="loginOverlay">
@@ -217,29 +217,40 @@
     </section>
   </main>
 
-  <div class="modal-backdrop" id="modalBackdrop" hidden>
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modal-header">
-        <div><p class="section-kicker">NOVA VIAGEM</p><h2 id="modalTitle">Segunda-feira</h2></div>
-        <button class="icon-button small" id="closeModalButton" type="button" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
-      </div>
-      <form id="tripForm">
-        <label>Quem solicitou a viagem<input name="requester" required placeholder="Nome do solicitante" /></label>
-        <label>Município<input name="municipality" required placeholder="Cidade ou município de destino" /></label>
-        <label>Custeio<select name="funding" required><option value="">Selecione o custeio</option><option>IGEP SAÚDE</option><option>CEPHRECE</option><option>PLURALMED GESTÃO</option><option>PLURALMED EDUCAÇÃO</option><option>PLURALMED TECNOLOGIAS</option><option>PRIMETECH</option></select></label>
-        <label>Motorista<select name="driver" id="tripDriver" required><option value="">Selecione o motorista</option></select></label>
-        <label>Veículo (placa)<input name="vehicle" required placeholder="Ex: ABC1D23" /></label>
-        <div class="form-grid">
-          <label>Horário de ida<input name="departureTime" required type="time" /></label>
-          <label>Horário de volta<input name="returnTime" required type="time" /></label>
-        </div>
-        <div class="collaborator-section">
-          <span class="field-title">Colaboradores</span>
+  <div class="modal-backdrop trip-modal-backdrop" id="modalBackdrop" hidden>
+    <div class="modal trip-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <header class="trip-modal-hero">
+        <div class="trip-hero-copy"><span class="trip-live-badge"><i></i> PLANEJAMENTO OPERACIONAL</span><p class="section-kicker">NOVA VIAGEM</p><h2 id="modalTitle">Segunda-feira</h2><p>Registre os dados da rota. O progresso é atualizado automaticamente enquanto você preenche.</p></div>
+        <div class="trip-hero-symbol" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M6 30h23l7-11h5l3 11v6h-5a5 5 0 0 1-10 0H19a5 5 0 0 1-10 0H6zM12 36a3 3 0 1 0 6 0 3 3 0 0 0-6 0Zm17 0a3 3 0 1 0 6 0 3 3 0 0 0-6 0ZM8 14h17M8 20h12"/></svg></div>
+        <button class="trip-modal-close" id="closeModalButton" type="button" aria-label="Fechar formulário" title="Fechar sem salvar">×</button>
+      </header>
+      <div class="trip-progress-wrap"><div class="trip-progress-label"><span>Preenchimento da viagem</span><strong id="tripProgressText">0% concluído</strong></div><div class="trip-progress-track"><span id="tripProgressBar"></span></div><div class="trip-progress-hint" id="tripProgressHint">Comece informando quem solicitou a viagem.</div></div>
+      <form id="tripForm" class="trip-form">
+        <section class="trip-form-section"><div class="trip-section-heading"><span class="trip-section-icon">01</span><div><h3>Identificação da viagem</h3><p>Quem solicitou e para onde a equipe vai?</p></div><span class="trip-section-tag">ESSENCIAL</span></div>
+          <div class="trip-field-grid">
+            <label class="trip-field"><span>Quem solicitou a viagem <b>*</b><i class="tip" tabindex="0" title="Informe o nome da pessoa que pediu o deslocamento." data-tip="Informe o nome da pessoa que pediu o deslocamento." aria-label="Ajuda: nome do solicitante">?</i></span><input name="requester" required placeholder="Ex.: Maria Silva" autocomplete="name" /></label>
+            <label class="trip-field"><span>Município de destino <b>*</b><i class="tip" tabindex="0" title="Digite a cidade ou município para onde a equipe irá." data-tip="Digite a cidade ou município para onde a equipe irá." aria-label="Ajuda: município de destino">?</i></span><input name="municipality" required placeholder="Ex.: Sobral - CE" /></label>
+          </div>
+          <label class="trip-field"><span>Centro de custeio <b>*</b><i class="tip" tabindex="0" title="Selecione a unidade ou organização responsável pelo custo da viagem." data-tip="Selecione a unidade ou organização responsável pelo custo da viagem." aria-label="Ajuda: centro de custeio">?</i></span><select name="funding" required><option value="">Selecione o centro responsável</option><option>IGEP SAÚDE</option><option>CEPHRECE</option><option>PLURALMED GESTÃO</option><option>PLURALMED EDUCAÇÃO</option><option>PLURALMED TECNOLOGIAS</option><option>PRIMETECH</option></select><small class="field-hint">Escolha a opção que deverá receber o lançamento do custo.</small></label>
+        </section>
+        <section class="trip-form-section"><div class="trip-section-heading"><span class="trip-section-icon">02</span><div><h3>Transporte e horários</h3><p>Defina a equipe responsável e o período do deslocamento.</p></div></div>
+          <div class="trip-field-grid">
+            <label class="trip-field"><span>Motorista <b>*</b><i class="tip" tabindex="0" title="Selecione o condutor responsável pelo veículo." data-tip="Selecione o condutor responsável pelo veículo." aria-label="Ajuda: motorista">?</i></span><select name="driver" id="tripDriver" required><option value="">Selecione o motorista</option></select></label>
+            <label class="trip-field"><span>Veículo / placa <b>*</b><i class="tip" tabindex="0" title="Informe a placa do veículo utilizado. Exemplo: ABC1D23." data-tip="Informe a placa do veículo utilizado. Exemplo: ABC1D23." aria-label="Ajuda: placa do veículo">?</i></span><input name="vehicle" required placeholder="Ex.: ABC1D23" maxlength="8" /></label>
+          </div>
+          <div class="trip-field-grid">
+            <label class="trip-field"><span>Horário de ida <b>*</b><i class="tip" tabindex="0" title="Horário previsto para sair. Use o horário local." data-tip="Horário previsto para sair. Use o horário local." aria-label="Ajuda: horário de ida">?</i></span><input name="departureTime" required type="time" /><small class="field-hint">Saída prevista</small></label>
+            <label class="trip-field"><span>Horário de volta <b>*</b><i class="tip" tabindex="0" title="Horário previsto de retorno ao ponto de origem." data-tip="Horário previsto de retorno ao ponto de origem." aria-label="Ajuda: horário de volta">?</i></span><input name="returnTime" required type="time" /><small class="field-hint">Retorno previsto</small></label>
+          </div>
+        </section>
+        <section class="trip-form-section"><div class="trip-section-heading"><span class="trip-section-icon">03</span><div><h3>Equipe da viagem</h3><p>Adicione quem participará do deslocamento e, se aplicável, informe ajuda de custo.</p></div><i class="tip" tabindex="0" title="Use um registro para cada colaborador. Você pode adicionar vários." data-tip="Use um registro para cada colaborador. Você pode adicionar vários." aria-label="Ajuda: colaboradores">?</i></div>
           <div id="collaboratorRows"></div>
-          <button class="add-collaborator-button" id="addCollaboratorButton" type="button"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Adicionar Colaborador</button>
-        </div>
-        <label>Custo da gasolina<div class="money-input"><span>R$</span><input name="fuelCost" required type="number" min="0" step="0.01" placeholder="0,00" /></div></label>
-        <div class="form-actions"><button class="ghost-button" id="cancelModalButton" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar viagem</button></div>
+          <button class="add-collaborator-button" id="addCollaboratorButton" type="button"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Adicionar colaborador <span>+</span></button>
+        </section>
+        <section class="trip-form-section"><div class="trip-section-heading"><span class="trip-section-icon">04</span><div><h3>Custos da viagem</h3><p>Registre o valor estimado ou efetivo do combustível.</p></div><span class="trip-section-tag">FINANCEIRO</span></div>
+          <label class="trip-field"><span>Custo da gasolina (R$) <b>*</b><i class="tip" tabindex="0" title="Informe apenas o valor numérico do gasto com combustível." data-tip="Informe apenas o valor numérico do gasto com combustível." aria-label="Ajuda: custo da gasolina">?</i></span><div class="money-input"><span>R$</span><input name="fuelCost" required type="number" min="0" step="0.01" placeholder="0,00" /></div><small class="field-hint">Se ainda não souber o valor, use 0,00 e atualize conforme o procedimento interno.</small></label>
+        </section>
+        <div class="trip-form-footer"><div class="trip-footer-note"><span>✓</span><div><strong>Confira antes de salvar</strong><small>Campos com * são obrigatórios. Seus dados só serão gravados ao salvar.</small></div></div><div class="form-actions"><button class="ghost-button" id="cancelModalButton" type="button">Cancelar</button><button class="primary-button trip-save-button" type="submit"><span>Salvar viagem</span><b>→</b></button></div></div>
       </form>
     </div>
   </div>
@@ -259,7 +270,7 @@
   <script>
     // Evita cache de recursos e atualiza abas abertas quando uma nova versão é publicada.
     (() => {
-      const version = "2026103009";
+      const version = "2026103010";
       document.querySelectorAll('link[rel="stylesheet"][href^="styles.css"]').forEach(el => el.href = "styles.css?v=" + version);
       document.querySelectorAll('script[src^="supabase-config.js"], script[src^="app.js"]').forEach(el => {
         const base = el.src.includes("supabase-config.js") ? "supabase-config.js" : "app.js";
@@ -287,7 +298,7 @@
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="supabase-config.js?v=2026103009"></script>
-  <script src="app.js?v=2026103009"></script>
+  <script src="supabase-config.js?v=2026103010"></script>
+  <script src="app.js?v=2026103010"></script>
 </body>
 </html>
