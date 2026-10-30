@@ -41,7 +41,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .login-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border-radius: 8px; background: #f2f5f3; }
 .login-tab { border: 0; border-radius: 6px; padding: 10px; background: transparent; color: #667085; font-weight: 800; cursor: pointer; }
 .login-tab.active { background: white; color: var(--green-dark); box-shadow: 0 1px 4px rgba(24, 54, 45, .08); }
-#loginFields, #registerFields { display: grid; gap: 14px; }
+#loginFields, #bootstrapFields { display: grid; gap: 14px; }
 .login-card input, .account-form input, .account-form select { width: 100%; border: 1px solid #dfe4e2; border-radius: 7px; background: #fbfcfb; padding: 11px 12px; color: var(--ink); outline: none; }
 .login-card input:focus, .account-form input:focus, .account-form select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(14,122,95,.08); }
 .login-error { color: #b42318; font-size: 13px; }
