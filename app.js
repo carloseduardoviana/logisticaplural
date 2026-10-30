@@ -85,7 +85,7 @@ function savePeriod() {
 }
 
 function saveSharedState() {
-  if (!currentProfile || currentProfile.active === false) return;
+  if (!currentProfile || currentProfile.active === false || !["admin", "editor"].includes(currentProfile.role)) return;
   localStorage.setItem("logiflow-trips", JSON.stringify(trips));
   localStorage.setItem("logiflow-period", JSON.stringify(periodSettings));
   localStorage.setItem("logiflow-dashboard-range", JSON.stringify(dashboardRange));
@@ -511,6 +511,7 @@ tripForm.elements.returnTime.addEventListener("input", () => tripForm.elements.r
 
 tripForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (!currentProfile || !["admin", "editor"].includes(currentProfile.role)) return;
   const data = new FormData(tripForm);
   const collaborators = Array.from(document.querySelectorAll(".collaborator-row")).map((row) => ({
     name: row.querySelector(".name-input").value.trim(),
@@ -592,7 +593,7 @@ document.querySelector("#copyAutoTextButton").addEventListener("click", () => co
 
 document.querySelector("#kmTableBody").addEventListener("input", (event) => {
   const input = event.target.closest(".km-input");
-  if (!input) return;
+  if (!input || !currentProfile || !["admin", "editor"].includes(currentProfile.role)) return;
   const trip = trips[input.dataset.day][Number(input.dataset.index)];
   const field = input.dataset.kind === "initial" ? "kmInitial" : "kmFinal";
   trip[field] = input.value === "" ? null : Number(input.value);
@@ -607,7 +608,7 @@ document.querySelector("#kmTableBody").addEventListener("input", (event) => {
 
 tripList.addEventListener("click", (event) => {
   const button = event.target.closest(".delete-button");
-  if (!button) return;
+  if (!button || !currentProfile || !["admin", "editor"].includes(currentProfile.role)) return;
   trips[selectedDay].splice(Number(button.dataset.index), 1);
   save();
   render();
@@ -615,18 +616,15 @@ tripList.addEventListener("click", (event) => {
 
 render();
 
+let sharedSubscriptionStarted = false;
 async function initializeSharedState() {
+  if (!currentProfile || currentProfile.active === false) return;
   try {
     const remote = await window.logiFlowSync.load();
-    if (remote && typeof remote === "object" && Object.keys(remote).length) {
-      applySharedState(remote);
-    } else {
-      saveSharedState();
-    }
-    window.logiFlowSync.subscribe((remoteState) => applySharedState(remoteState));
-  } catch (error) {
-    console.error("Não foi possível conectar ao armazenamento compartilhado:", error.message || error);
-  }
+    if (remote && typeof remote === "object" && Object.keys(remote).length) applySharedState(remote);
+    else if (["admin", "editor"].includes(currentProfile.role)) saveSharedState();
+    if (!sharedSubscriptionStarted) { window.logiFlowSync.subscribe((remoteState) => applySharedState(remoteState)); sharedSubscriptionStarted = true; }
+  } catch (error) { console.error("Não foi possível conectar ao armazenamento compartilhado:", error.message || error); }
 }
 
 function applySharedState(state) {
@@ -657,22 +655,24 @@ function applySharedState(state) {
 
 initializeSharedState();
 
-const roleLabels = {
-  adm_geral: "Administrador geral",
-  administrador: "Administrador",
-  operador: "Operador",
-  consulta: "Consulta"
-};
+const roleLabels = { admin: "Administrador", editor: "Editor", visualizador: "Visualizador" };
 
 async function showLoginOrApp() {
+  const statusResult = await window.logiFlowSync.getBootstrapStatus();
+  const needsBootstrap = !statusResult.error && statusResult.data?.needsBootstrap === true;
+  document.querySelector("#bootstrapFields").hidden = !needsBootstrap;
+  document.querySelector("#loginFields").hidden = needsBootstrap;
+  document.querySelector("#loginCode").required = !needsBootstrap;
+  document.querySelector("#loginPassword").required = !needsBootstrap;
+  ["#bootstrapToken", "#bootstrapName", "#bootstrapCode", "#bootstrapPassword", "#bootstrapPasswordConfirmation"].forEach((selector) => { document.querySelector(selector).required = needsBootstrap; });
+  document.querySelector("#loginSubmit").textContent = needsBootstrap ? "Criar administrador" : "Entrar";
+  document.querySelector("#loginError").hidden = true;
   currentProfile = await window.logiFlowSync.getCurrentProfile();
   if (currentProfile && currentProfile.active !== false) {
     document.querySelector("#loginOverlay").hidden = true;
     applyCurrentProfile();
-    saveSharedState();
-  } else {
-    document.querySelector("#loginOverlay").hidden = false;
-  }
+    await initializeSharedState();
+  } else { document.querySelector("#loginOverlay").hidden = false; }
 }
 
 function applyCurrentProfile() {
@@ -686,146 +686,48 @@ function applyCurrentProfile() {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
-  const canManage = currentProfile.role === "adm_geral";
+  const canManage = currentProfile.role === "admin";
+  const canEdit = canManage || currentProfile.role === "editor";
   document.querySelector("#settingsNav").hidden = false;
   document.querySelector("#newAccountPanel").hidden = !canManage;
   document.querySelector("#accountsPanel").hidden = !canManage;
   document.querySelector("#driversPanel").hidden = !canManage;
+  document.querySelector("#driverForm").hidden = !canManage;
+  document.querySelector("#addTripButton").hidden = !canEdit;
+  document.querySelectorAll(".delete-button").forEach((button) => { button.hidden = !canEdit; });
+  document.querySelectorAll(".km-input").forEach((input) => { input.disabled = !canEdit; });
 }
-
-let loginMode = "login";
-
-function selectLoginMode(mode) {
-  loginMode = mode;
-  const isLogin = mode === "login";
-  document.querySelector("#loginFields").hidden = !isLogin;
-  document.querySelector("#registerFields").hidden = isLogin;
-  document.querySelector("#loginCode").required = isLogin;
-  document.querySelector("#loginPassword").required = isLogin;
-  ["#registerName", "#registerCode", "#registerPassword", "#registerPasswordConfirmation"].forEach((selector) => {
-    document.querySelector(selector).required = !isLogin;
-  });
-  document.querySelector("#loginTab").classList.toggle("active", isLogin);
-  document.querySelector("#registerTab").classList.toggle("active", !isLogin);
-  document.querySelector("#loginTab").setAttribute("aria-selected", String(isLogin));
-  document.querySelector("#registerTab").setAttribute("aria-selected", String(!isLogin));
-  document.querySelector("#loginSubmit").textContent = isLogin ? "Entrar" : "Cadastrar";
-  document.querySelector("#loginError").hidden = true;
-}
-
-document.querySelector("#loginTab").addEventListener("click", () => selectLoginMode("login"));
-document.querySelector("#registerTab").addEventListener("click", () => selectLoginMode("register"));
 
 let cooldownTimer = null;
-
-function formatCooldown(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+function formatCooldown(seconds) { const minutes=Math.floor(seconds/60), remainder=seconds%60; return `${String(minutes).padStart(2,"0")}:${String(remainder).padStart(2,"0")}`; }
+function startAuthCooldown(seconds=300) {
+ const errorElement=document.querySelector("#loginError"),submitButton=document.querySelector("#loginSubmit"),endAt=Date.now()+seconds*1000;
+ localStorage.setItem("logiflow-auth-cooldown",String(endAt));clearInterval(cooldownTimer);submitButton.disabled=true;errorElement.className="login-error";errorElement.hidden=false;
+ const updateCooldown=()=>{const remaining=Math.max(0,Math.ceil((endAt-Date.now())/1000));if(remaining>0){errorElement.textContent=`Limite temporário. Nova tentativa em ${formatCooldown(remaining)}.`;submitButton.disabled=true;return;}clearInterval(cooldownTimer);localStorage.removeItem("logiflow-auth-cooldown");errorElement.hidden=true;submitButton.disabled=false;};
+ updateCooldown();cooldownTimer=setInterval(updateCooldown,1000);
 }
-
-function startAuthCooldown(seconds = 300) {
-  const errorElement = document.querySelector("#loginError");
-  const submitButton = document.querySelector("#loginSubmit");
-  const endAt = Date.now() + seconds * 1000;
-  localStorage.setItem("logiflow-auth-cooldown", String(endAt));
-  clearInterval(cooldownTimer);
-
-  submitButton.disabled = true;
-  errorElement.className = "login-error";
-  errorElement.hidden = false;
-
-  const updateCooldown = () => {
-    const remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
-    if (remaining > 0) {
-      errorElement.textContent = `Limite temporário. Nova tentativa em ${formatCooldown(remaining)}.`;
-      submitButton.disabled = true;
-      return;
-    }
-    clearInterval(cooldownTimer);
-    localStorage.removeItem("logiflow-auth-cooldown");
-    errorElement.hidden = true;
-    submitButton.disabled = false;
-  };
-
-  updateCooldown();
-  cooldownTimer = setInterval(updateCooldown, 1000);
-}
-
-const savedCooldown = Number(localStorage.getItem("logiflow-auth-cooldown") || 0);
-if (savedCooldown > Date.now()) {
-  startAuthCooldown(Math.ceil((savedCooldown - Date.now()) / 1000));
-}
-
-document.querySelector("#loginForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const errorElement = document.querySelector("#loginError");
-  const submitButton = document.querySelector("#loginSubmit");
-  errorElement.hidden = true;
-  submitButton.disabled = true;
-
-  try {
-    if (loginMode === "register") {
-      const displayName = document.querySelector("#registerName").value.trim();
-      const loginCode = document.querySelector("#registerCode").value.trim();
-      const password = document.querySelector("#registerPassword").value;
-      const confirmation = document.querySelector("#registerPasswordConfirmation").value;
-
-      if (!displayName || !loginCode || !password) throw new Error("Preencha nome, código de login e senha.");
-      if (password !== confirmation) throw new Error("As senhas não coincidem.");
-
-      const result = await window.logiFlowSync.createAccount(displayName, loginCode, password, "consulta");
-      if (result.error) throw result.error;
-
-      if (result.data?.session) {
-        currentProfile = await window.logiFlowSync.getCurrentProfile();
-        document.querySelector("#loginOverlay").hidden = true;
-        applyCurrentProfile();
-        saveSharedState();
-        return;
-      }
-
-      selectLoginMode("login");
-      document.querySelector("#loginCode").value = loginCode;
-      document.querySelector("#loginPassword").value = "";
-      errorElement.textContent = "Conta cadastrada. Informe a senha para entrar.";
-      errorElement.className = "settings-message success";
-      errorElement.hidden = false;
-      return;
-    }
-
-    const loginCode = document.querySelector("#loginCode").value.trim();
-    const password = document.querySelector("#loginPassword").value;
-    const { data, error } = await window.logiFlowSync.login(loginCode, password);
-    if (error || !data?.session) {
-      throw new Error("Código ou senha inválidos.");
-    }
-    currentProfile = await window.logiFlowSync.getCurrentProfile();
-    if (!currentProfile || currentProfile.active === false) {
-      await window.logiFlowSync.logout();
-      throw new Error("Esta conta está inativa.");
-    }
-    document.querySelector("#loginOverlay").hidden = true;
-    applyCurrentProfile();
-    saveSharedState();
-  } catch (error) {
-    const message = String(error?.message || "");
-    if (message.toLowerCase().includes("rate limit")) {
-      startAuthCooldown();
-    } else if (message.toLowerCase().includes("database error saving new user")) {
-      errorElement.textContent = "Não foi possível finalizar o cadastro. Tente outro código de login.";
-    } else {
-      errorElement.textContent = message || "Não foi possível concluir a operação.";
-    }
-    errorElement.className = "login-error";
-    errorElement.hidden = false;
-  } finally {
-    if (Number(localStorage.getItem("logiflow-auth-cooldown") || 0) <= Date.now()) {
-      submitButton.disabled = false;
-    }
+const savedCooldown=Number(localStorage.getItem("logiflow-auth-cooldown")||0);
+if(savedCooldown>Date.now())startAuthCooldown(Math.ceil((savedCooldown-Date.now())/1000));
+document.querySelector("#loginForm").addEventListener("submit",async(event)=>{
+ event.preventDefault();const errorElement=document.querySelector("#loginError"),submitButton=document.querySelector("#loginSubmit");errorElement.hidden=true;submitButton.disabled=true;
+ try{
+  if(!document.querySelector("#bootstrapFields").hidden){
+   const token=document.querySelector("#bootstrapToken").value.trim(),displayName=document.querySelector("#bootstrapName").value.trim(),loginCode=document.querySelector("#bootstrapCode").value.trim(),password=document.querySelector("#bootstrapPassword").value,confirmation=document.querySelector("#bootstrapPasswordConfirmation").value;
+   if(!token||!displayName||!loginCode)throw new Error("Preencha o código de configuração, nome e login.");
+   if(password.length<12)throw new Error("Use uma senha com pelo menos 12 caracteres.");
+   if(password!==confirmation)throw new Error("As senhas não coincidem.");
+   const created=await window.logiFlowSync.bootstrapAdmin(token,displayName,loginCode,password);if(created.error)throw created.error;
+   const loginResult=await window.logiFlowSync.login(loginCode,password);if(loginResult.error||!loginResult.data?.session)throw new Error("Administrador criado. Entre com o login e a senha definidos.");
+   currentProfile=await window.logiFlowSync.getCurrentProfile();if(!currentProfile||currentProfile.role!=="admin")throw new Error("Não foi possível confirmar o perfil administrador.");
+   document.querySelector("#loginOverlay").hidden=true;applyCurrentProfile();await initializeSharedState();return;
   }
+  const loginCode=document.querySelector("#loginCode").value.trim(),password=document.querySelector("#loginPassword").value;
+  const {data,error}=await window.logiFlowSync.login(loginCode,password);if(error||!data?.session)throw new Error("Código ou senha inválidos.");
+  currentProfile=await window.logiFlowSync.getCurrentProfile();if(!currentProfile||currentProfile.active===false){await window.logiFlowSync.logout();throw new Error("Esta conta está inativa.");}
+  document.querySelector("#loginOverlay").hidden=true;applyCurrentProfile();await initializeSharedState();
+ }catch(error){const message=String(error?.message||"");if(message.toLowerCase().includes("rate limit"))startAuthCooldown();else{errorElement.textContent=message||"Não foi possível concluir a operação.";errorElement.className="login-error";errorElement.hidden=false;}}
+ finally{if(Number(localStorage.getItem("logiflow-auth-cooldown")||0)<=Date.now())submitButton.disabled=false;}
 });
-
 document.querySelector("#logoutButton").addEventListener("click", async () => {
   await window.logiFlowSync.logout();
   currentProfile = null;
@@ -929,20 +831,14 @@ document.querySelector("#accountForm").addEventListener("submit", async (event) 
   const button = form.querySelector("button[type='submit']");
   button.disabled = true;
   try {
-    const adminSession = await window.logiFlowSync.client.auth.getSession();
+    if (currentProfile?.role !== "admin") throw new Error("Apenas administradores podem criar contas.");
     const result = await window.logiFlowSync.createAccount(
-      String(data.get("displayName")),
-      String(data.get("loginCode")),
+      String(data.get("displayName")).trim(),
+      String(data.get("loginCode")).trim(),
       String(data.get("password")),
       String(data.get("role"))
     );
     if (result.error) throw result.error;
-    if (adminSession?.data?.session) {
-      await window.logiFlowSync.client.auth.setSession({
-        access_token: adminSession.data.session.access_token,
-        refresh_token: adminSession.data.session.refresh_token
-      });
-    }
     form.reset();
     await renderAccounts();
     const toast = document.querySelector("#toast");
@@ -982,12 +878,11 @@ document.querySelector("#accountsList").addEventListener("click", async (event) 
 
 document.querySelector("#settingsNav").addEventListener("click", () => {
   renderDriverOptions();
-  if (currentProfile?.role === "adm_geral") {
+  if (currentProfile?.role === "admin") {
     renderDrivers();
     renderAccounts();
   }
 });
 
 renderDriverOptions();
-selectLoginMode("login");
 showLoginOrApp();
