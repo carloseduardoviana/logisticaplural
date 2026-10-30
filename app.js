@@ -1265,3 +1265,80 @@ async function exportTravelPanelPdf() {
   }
 }
 document.querySelector("#travelExportPdf")?.addEventListener("click", exportTravelPanelPdf);
+document.querySelector("#travelExportCalendarPdf")?.addEventListener("click", exportTravelCalendarPdf);
+async function exportTravelCalendarPdf() {
+  const button = document.querySelector("#travelExportCalendarPdf");
+  const oldLabel = button?.innerHTML;
+  if (button) { button.disabled = true; button.textContent = "Montando calendário…"; }
+  try {
+    if (!window.jspdf?.jsPDF) {
+      await new Promise((resolve,reject)=>{
+        const script=document.createElement("script");
+        script.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+        script.onload=resolve; script.onerror=reject; document.head.appendChild(script);
+      });
+    }
+    const PDF=window.jspdf.jsPDF;
+    const year=travelCalendarMonth.getFullYear(), month=travelCalendarMonth.getMonth();
+    const trips=getAllTripsForTravelPanel().filter(t=>{
+      const d=new Date((t.tripDate||"")+"T12:00:00");
+      return d.getFullYear()===year&&d.getMonth()===month;
+    });
+    const title=new Date(year,month,1).toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
+    const pdf=new PDF({orientation:"landscape",unit:"mm",format:"a3",compress:true});
+    const W=420,H=297,margin=9,teal=[7,93,102],ink=[39,55,60],muted=[110,127,132],grid=[211,225,225],soft=[245,249,249],green=[19,125,96],red=[196,65,65];
+    const weekday=["DOMINGO","SEGUNDA","TERÇA","QUARTA","QUINTA","SEXTA","SÁBADO"];
+    const first=new Date(year,month,1), offset=first.getDay(), days=new Date(year,month+1,0).getDate();
+    const rows=Math.ceil((offset+days)/7), headerY=margin+21, weekdayH=8, gridY=headerY+weekdayH, gridH=H-margin-gridY-10, cellW=(W-2*margin)/7, cellH=gridH/rows;
+    pdf.setFillColor(...teal);pdf.roundedRect(margin,margin,W-2*margin,17,2,2,"F");
+    pdf.setTextColor(255,255,255);pdf.setFont("helvetica","bold");pdf.setFontSize(16);pdf.text("CALENDÁRIO DE VIAGENS",margin+5,margin+7);
+    pdf.setFont("helvetica","normal");pdf.setFontSize(9);pdf.text("PLURALMED  ·  "+title,margin+5,margin+13);
+    const tripCount=trips.length, people=trips.reduce((n,t)=>n+(t.collaborators||[]).length,0);
+    pdf.setFont("helvetica","bold");pdf.setFontSize(8);pdf.text(tripCount+" viagens  ·  "+people+" participações de colaboradores",W-margin-4,margin+10,{align:"right"});
+    weekday.forEach((label,i)=>{const x=margin+i*cellW;pdf.setFillColor(...teal);pdf.rect(x,headerY,cellW,weekdayH,"F");pdf.setTextColor(255,255,255);pdf.setFont("helvetica","bold");pdf.setFontSize(7);pdf.text(label,x+cellW/2,headerY+5.2,{align:"center"});});
+    const dayMap={};trips.forEach(t=>(dayMap[t.tripDate] ||= []).push(t));
+    for(let slot=0;slot<rows*7;slot++){
+      const day=slot-offset+1,row=Math.floor(slot/7),col=slot%7,x=margin+col*cellW,y=gridY+row*cellH;
+      pdf.setFillColor(...(day>=1&&day<=days?(dayMap[`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}]?.length?[246,251,249]:[255,255,255]):[247,249,249]));
+      pdf.setDrawColor(...grid);pdf.setLineWidth(.25);pdf.rect(x,y,cellW,cellH,"FD");
+      if(day<1||day>days)continue;
+      const date=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+      const list=(dayMap[date]||[]).slice().sort((a,b)=>(a.departureTime||"").localeCompare(b.departureTime||""));
+      pdf.setTextColor(...teal);pdf.setFont("helvetica","bold");pdf.setFontSize(9);pdf.text(String(day),x+2.2,y+4.5);
+      if(!list.length){pdf.setTextColor(188,198,200);pdf.setFont("helvetica","italic");pdf.setFontSize(6);pdf.text("Sem viagens",x+2.2,y+9);continue;}
+      pdf.setTextColor(...green);pdf.setFont("helvetica","bold");pdf.setFontSize(6);pdf.text(list.length+" viagem(ns)",x+8,y+4.5);
+      let lineY=y+9, maxY=y+cellH-2.5;
+      const maxLines=Math.max(1,Math.floor((maxY-lineY)/3.35));
+      const eventLines=[];
+      list.forEach(t=>{
+        const dest=String(t.municipality||"Destino não informado");
+        const time=(t.departureTime||"--:--")+" "+(t.returnTime?"– "+t.returnTime:"");
+        const count=(t.collaborators||[]).length;
+        eventLines.push({text:dest+" · "+time+" · "+count+" pessoa(s)",over:Number(count)>Number(t.vehicleCapacity||t.capacity||999)});
+      });
+      const shown=eventLines.slice(0,maxLines);
+      shown.forEach((event,i)=>{
+        pdf.setFont("helvetica",event.over?"bold":"normal");pdf.setFontSize(5.6);pdf.setTextColor(...(event.over?red:ink));
+        const lines=pdf.splitTextToSize(event.text,cellW-4);
+        pdf.text(lines[0],x+2,y+9+i*3.35);
+      });
+      if(eventLines.length>shown.length){
+        pdf.setFont("helvetica","bold");pdf.setFontSize(5.5);pdf.setTextColor(...muted);
+        pdf.text("+"+(eventLines.length-shown.length)+" viagem(ns) — detalhes",x+2,Math.min(maxY,y+9+shown.length*3.35));
+      }
+      const collaboratorTotal=list.reduce((n,t)=>n+(t.collaborators||[]).length,0);
+      if(lineY<maxY && list.length<=maxLines-1){
+        pdf.setFont("helvetica","normal");pdf.setFontSize(5.2);pdf.setTextColor(...muted);
+      }
+    }
+    pdf.setTextColor(...muted);pdf.setFont("helvetica","normal");pdf.setFontSize(6);
+    pdf.text("Calendário mensal completo · Destinos, horários e quantidade de colaboradores por viagem.",margin,H-margin+2);
+    pdf.save("calendario-viagens-"+year+"-"+String(month+1).padStart(2,"0")+".pdf");
+  } catch(error) {
+    console.error("Erro ao gerar calendário PDF:",error);
+    alert("Não foi possível baixar o calendário. Verifique sua conexão com a internet e tente novamente.");
+  } finally {
+    if(button){button.disabled=false;button.innerHTML=oldLabel||"Baixar calendário";}
+  }
+}
+
