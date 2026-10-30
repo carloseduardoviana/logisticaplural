@@ -729,6 +729,22 @@ document.querySelector("#dashboardEndDate").addEventListener("change", (event) =
   renderDashboard();
 });
 
+const sidebar = document.querySelector("#appSidebar");
+const sidebarToggle = document.querySelector("#sidebarToggle");
+const savedSidebarState = localStorage.getItem("pluralmed-sidebar-collapsed") === "true";
+if (savedSidebarState && window.innerWidth > 680) {
+  sidebar?.classList.add("collapsed");
+  document.body.classList.add("sidebar-collapsed");
+  if (sidebarToggle) { sidebarToggle.setAttribute("aria-expanded","false"); sidebarToggle.setAttribute("aria-label","Expandir menu lateral"); sidebarToggle.title="Expandir menu"; }
+}
+sidebarToggle?.addEventListener("click", () => {
+  const collapsed = sidebar?.classList.toggle("collapsed") || false;
+  document.body.classList.toggle("sidebar-collapsed", collapsed);
+  sidebarToggle.setAttribute("aria-expanded", String(!collapsed));
+  sidebarToggle.setAttribute("aria-label", collapsed ? "Expandir menu lateral" : "Recolher menu lateral");
+  sidebarToggle.title = collapsed ? "Expandir menu" : "Recolher menu";
+  localStorage.setItem("pluralmed-sidebar-collapsed", String(collapsed));
+});
 document.querySelectorAll(".nav-item[data-view]").forEach((button) => {
   button.addEventListener("click", () => {
     document.querySelectorAll(".nav-item[data-view]").forEach((item) => item.classList.remove("active"));
