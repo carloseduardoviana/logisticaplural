@@ -303,3 +303,16 @@ h2 { font-size: 21px; }
 .trip-modal.editor-request-mode #collaboratorRows .name-input{grid-column:1}
 .trip-modal.editor-request-mode .trip-form-section:has(#collaboratorRows){display:block!important}
 .trip-modal.editor-request-mode .trip-form-section:has(#collaboratorRows) .trip-section-heading h3{letter-spacing:.01em}
+
+/* Correção definitiva do formulário de solicitação do editor */
+.trip-modal [hidden], .trip-form [hidden], .trip-form-section[hidden], .trip-field[hidden] { display:none !important; }
+.trip-modal.editor-request-mode .trip-form { display:grid!important; align-content:start; }
+.trip-modal.editor-request-mode .trip-form-section { display:grid!important; }
+.trip-modal.editor-request-mode .trip-form-section[hidden] { display:none!important; }
+.trip-modal.editor-request-mode .trip-form-section:has(#collaboratorRows) { display:grid!important; }
+.trip-modal.editor-request-mode .trip-form-section:has(#collaboratorRows) .collaborator-row { display:grid!important; grid-template-columns:minmax(0,1fr) 36px!important; gap:10px; }
+.trip-modal.editor-request-mode .trip-form-section:has(#collaboratorRows) .name-input { min-width:0; width:100%; }
+.trip-modal.editor-request-mode .collaborator-row .cost-toggle,
+.trip-modal.editor-request-mode .collaborator-row .collaborator-help { display:none!important; }
+.trip-modal.editor-request-mode .trip-form-section:has(#collaboratorRows) .add-collaborator-button { display:flex; align-items:center; width:100%; }
+.trip-modal.editor-request-mode .trip-form-footer { position:sticky; bottom:0; z-index:3; background:#f7fafc; padding:14px 0 4px; border-top:1px solid #e2ebee; }
