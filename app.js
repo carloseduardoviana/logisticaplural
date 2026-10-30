@@ -973,7 +973,7 @@ function startAuthCooldown(seconds=300) {
 }
 const savedCooldown=Number(localStorage.getItem("logiflow-auth-cooldown")||0);
 if(savedCooldown>Date.now())startAuthCooldown(Math.ceil((savedCooldown-Date.now())/1000));
-document.querySelector("#loginForm").addEventListener("submit", async (event) => {
+window.handleLoginSubmit = async function (event) {
   event.preventDefault();
   event.stopPropagation();
   const form = event.currentTarget;
@@ -1027,7 +1027,8 @@ document.querySelector("#loginForm").addEventListener("submit", async (event) =>
   } finally {
     if (Number(localStorage.getItem("logiflow-auth-cooldown") || 0) <= Date.now()) submitButton.disabled = false;
   }
-});
+};
+
 async function logoutCurrentProfile() {
   try {
     await window.logiFlowSync.logout();
