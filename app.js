@@ -796,7 +796,8 @@ function applyCurrentProfile() {
     document.querySelector("#editorSubmissionNote").hidden = false;
   }
   if (editorTripsNav && currentProfile.role === "editor") editorTripsNav.querySelector("span").textContent = "Minhas viagens";
-  document.querySelector("#settingsNav").hidden = false;
+  // Editores acessam somente Minhas viagens; configurações são reservadas à administração.
+  document.querySelector("#settingsNav").hidden = currentProfile.role !== "admin";
   document.querySelector("#newAccountPanel").hidden = !canManage;
   document.querySelector("#accountsPanel").hidden = !canManage;
   document.querySelector("#driversPanel").hidden = !canManage;
